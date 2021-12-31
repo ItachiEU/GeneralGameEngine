@@ -5,7 +5,7 @@ int main()
    srand(time(NULL));
    Chess game;
 
-   game.run();
+   game.run(true);
 
    return 0;
 }

@@ -42,7 +42,7 @@ private:
 public:
    Chess();
    Chess(Chess &game);
-   void run();
+   void run(bool debug = false);
    std::vector<Move> getPossibleMoves();
    void simulateMove(Move move);
    int gameStatus(std::vector<Move> moves);
