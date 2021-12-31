@@ -1,7 +1,7 @@
 #pragma once
 #include "Game.hpp"
 #include "ChessPiece.hpp"
-#include "Move.hpp"
+#include "ChessMove.hpp"
 
 enum GameStatus
 {
@@ -17,7 +17,7 @@ private:
    std::vector<std::vector<ChessPiece>> board;
    std::pair<int, int> whiteKing;
    std::pair<int, int> blackKing;
-   std::vector<Move> movesHistory;
+   std::vector<ChessMove *> movesHistory;
    std::unordered_map<std::string, int> positionHistory;
    bool whiteKingMoved;
    bool blackKingMoved;
@@ -28,12 +28,12 @@ private:
    std::string encodedPosition;
 
    void initBoard(std::vector<std::vector<ChessPiece>> &board);
-   std::vector<Move> getPawnMoves(int row, int column);
-   std::vector<Move> getKnightMoves(int row, int column);
-   std::vector<Move> getBishopMoves(int row, int column);
-   std::vector<Move> getRookMoves(int row, int column);
-   std::vector<Move> getKingMoves(int row, int column);
-   std::vector<Move> getQueenMoves(int row, int column);
+   std::vector<ChessMove *> getPawnMoves(int row, int column);
+   std::vector<ChessMove *> getKnightMoves(int row, int column);
+   std::vector<ChessMove *> getBishopMoves(int row, int column);
+   std::vector<ChessMove *> getRookMoves(int row, int column);
+   std::vector<ChessMove *> getKingMoves(int row, int column);
+   std::vector<ChessMove *> getQueenMoves(int row, int column);
    bool isUnderCheck(int color);
    bool canPlayerCastle(int color, int side);
    void handleCastling(bool kingside);
@@ -43,7 +43,7 @@ public:
    Chess();
    Chess(Chess &game);
    void run(bool debug = false);
-   std::vector<Move> getPossibleMoves();
-   void simulateMove(Move move);
-   int gameStatus(std::vector<Move> moves);
+   std::vector<Move *> getPossibleMoves();
+   void simulateMove(Move *move);
+   int gameStatus(std::vector<Move *> moves);
 };
