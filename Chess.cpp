@@ -475,10 +475,10 @@ std::string Chess::encodePosition()
    std::string encoded;
    for (int i = 0; i < 8; i++)
       for (int j = 0; j < 8; j++)
-         encoded += to_string(this->board[i][j].getType());
-   encoded += to_string(this->currentPlayer);
-   encoded += to_string(this->canPlayerCastle(currentPlayer, 0));
-   encoded += to_string(this->canPlayerCastle(currentPlayer, 1));
+         encoded += std::to_string(this->board[i][j].getType());
+   encoded += std::to_string(this->currentPlayer);
+   encoded += std::to_string(this->canPlayerCastle(currentPlayer, 0));
+   encoded += std::to_string(this->canPlayerCastle(currentPlayer, 1));
    return encoded;
 }
 
@@ -651,20 +651,23 @@ int Chess::gameStatus(std::vector<Move> moves)
    return GameStatus::IN_PROGRESS;
 }
 
-void Chess::run()
+void Chess::run(bool debug)
 {
    std::vector<Move> possibleMoves = this->getPossibleMoves();
    int count = 0;
    while (this->gameStatus(possibleMoves) == GameStatus::IN_PROGRESS)
    {
-      // std::cout << "Available: " << std::endl;
-      // for (auto move : possibleMoves)
-      // {
-      //    std::cout << move.getFromRow() << " " << move.getFromCol() << " " << move.getToRow() << " " << move.getToCol() << " " << move.getPiece() << " " << move.getColor() << std::endl;
-      // }
-      // std::cout << "Chosen: " << std::endl;
       Move selectedMove = possibleMoves[rand() % possibleMoves.size()];
-      std::cout << selectedMove.getFromRow() << " " << selectedMove.getFromCol() << " " << selectedMove.getToRow() << " " << selectedMove.getToCol() << " " << selectedMove.getPiece() << " " << selectedMove.getColor() << std::endl;
+      if (debug)
+      {
+         std::cout << "Available: " << std::endl;
+         for (auto move : possibleMoves)
+         {
+            std::cout << move.getFromRow() << " " << move.getFromCol() << " " << move.getToRow() << " " << move.getToCol() << " " << move.getPiece() << " " << move.getColor() << std::endl;
+         }
+         std::cout << "Chosen: " << std::endl;
+         std::cout << selectedMove.getFromRow() << " " << selectedMove.getFromCol() << " " << selectedMove.getToRow() << " " << selectedMove.getToCol() << " " << selectedMove.getPiece() << " " << selectedMove.getColor() << std::endl;
+      }
       this->simulateMove(selectedMove);
 
       this->currentPlayer = 1 - this->currentPlayer;
