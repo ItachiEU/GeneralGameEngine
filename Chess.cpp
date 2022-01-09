@@ -73,17 +73,17 @@ void Chess::initBoard(std::vector<std::vector<ChessPiece>> &board)
    fillRoyal(this->board);
 }
 
-std::vector<ChessMove *> Chess::getPawnMoves(int row, int column)
+std::vector<std::shared_ptr<ChessMove>> Chess::getPawnMoves(int row, int column)
 {
    // check for en passant
-   std::vector<ChessMove *> moves;
+   std::vector<std::shared_ptr<ChessMove>> moves;
    if (this->movesHistory.size() > 0)
    {
       auto lastMove = this->movesHistory.back();
       if (lastMove->getPiece() == PAWN and lastMove->getToRow() == row and abs(column - lastMove->getToCol()) == 1 and abs(lastMove->getToRow() - lastMove->getFromRow()) == 2)
       {
          int to_row = this->currentPlayer == WHITE ? row + 1 : row - 1;
-         moves.push_back(new ChessMove(row, column, to_row, lastMove->getToCol(), currentPlayer, PAWN, lastMove->getToRow(), lastMove->getToCol()));
+         moves.push_back(std::make_shared<ChessMove>(row, column, to_row, lastMove->getToCol(), currentPlayer, PAWN, lastMove->getToRow(), lastMove->getToCol()));
       }
    }
    if (currentPlayer == WHITE)
@@ -93,34 +93,34 @@ std::vector<ChessMove *> Chess::getPawnMoves(int row, int column)
          if (row + 1 == 7) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(new ChessMove(row, column, row + 1, column, currentPlayer, piece, -1, -1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column, currentPlayer, piece, -1, -1));
          }
          else
-            moves.push_back(new ChessMove(row, column, row + 1, column, currentPlayer, PAWN, -1, -1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column, currentPlayer, PAWN, -1, -1));
       }
       if (row == 1 and this->board[row + 1][column].getType() == EMPTY and this->board[row + 2][column].getType() == EMPTY) // move 2 up
       {
-         moves.push_back(new ChessMove(row, column, row + 2, column, currentPlayer, PAWN, -1, -1));
+         moves.push_back(std::make_shared<ChessMove>(row, column, row + 2, column, currentPlayer, PAWN, -1, -1));
       }
       if (row + 1 < 8 and column - 1 >= 0 and this->board[row + 1][column - 1].getColor() == BLACK) // take top right
       {
          if (row + 1 == 7) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(new ChessMove(row, column, row + 1, column - 1, currentPlayer, piece, row + 1, column - 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column - 1, currentPlayer, piece, row + 1, column - 1));
          }
          else
-            moves.push_back(new ChessMove(row, column, row + 1, column - 1, currentPlayer, PAWN, row + 1, column - 1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column - 1, currentPlayer, PAWN, row + 1, column - 1));
       }
       if (row + 1 < 8 and column + 1 < 8 and this->board[row + 1][column + 1].getColor() == BLACK) // take top left
       {
          if (row + 1 == 7) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(new ChessMove(row, column, row + 1, column + 1, currentPlayer, piece, row + 1, column + 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column + 1, currentPlayer, piece, row + 1, column + 1));
          }
          else
-            moves.push_back(new ChessMove(row, column, row + 1, column + 1, currentPlayer, PAWN, row + 1, column + 1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column + 1, currentPlayer, PAWN, row + 1, column + 1));
       }
    }
    if (currentPlayer == BLACK)
@@ -130,43 +130,43 @@ std::vector<ChessMove *> Chess::getPawnMoves(int row, int column)
          if (row - 1 == 0) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(new ChessMove(row, column, row - 1, column, currentPlayer, piece, -1, -1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column, currentPlayer, piece, -1, -1));
          }
          else
-            moves.push_back(new ChessMove(row, column, row - 1, column, currentPlayer, PAWN, -1, -1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column, currentPlayer, PAWN, -1, -1));
       }
       if (row == 6 and this->board[row - 1][column].getType() == EMPTY and this->board[row - 2][column].getType() == EMPTY) // move 2 up
       {
-         moves.push_back(new ChessMove(row, column, row - 2, column, currentPlayer, PAWN, -1, -1));
+         moves.push_back(std::make_shared<ChessMove>(row, column, row - 2, column, currentPlayer, PAWN, -1, -1));
       }
       if (row - 1 >= 0 and column - 1 >= 0 and this->board[row - 1][column - 1].getColor() == WHITE) // take top right
       {
          if (row - 1 == 0) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(new ChessMove(row, column, row - 1, column - 1, currentPlayer, piece, row - 1, column - 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column - 1, currentPlayer, piece, row - 1, column - 1));
          }
          else
-            moves.push_back(new ChessMove(row, column, row - 1, column - 1, currentPlayer, PAWN, row - 1, column - 1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column - 1, currentPlayer, PAWN, row - 1, column - 1));
       }
       if (row - 1 >= 0 and column + 1 < 8 and this->board[row - 1][column + 1].getColor() == WHITE) // take top left
       {
          if (row - 1 == 0) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(new ChessMove(row, column, row - 1, column + 1, currentPlayer, piece, row - 1, column + 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column + 1, currentPlayer, piece, row - 1, column + 1));
          }
          else
-            moves.push_back(new ChessMove(row, column, row - 1, column + 1, currentPlayer, PAWN, row - 1, column + 1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column + 1, currentPlayer, PAWN, row - 1, column + 1));
       }
    }
    return moves;
 }
 
-std::vector<ChessMove *> Chess::getKnightMoves(int row, int column)
+std::vector<std::shared_ptr<ChessMove>> Chess::getKnightMoves(int row, int column)
 {
    std::vector<std::pair<int, int>> offsets = {{-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}, {1, -2}, {2, -1}, {2, 1}, {1, 2}};
-   std::vector<ChessMove *> moves;
+   std::vector<std::shared_ptr<ChessMove>> moves;
    for (auto offset : offsets)
    {
       auto potential_move = std::make_pair(offset.first + row, offset.second + column);
@@ -176,20 +176,20 @@ std::vector<ChessMove *> Chess::getKnightMoves(int row, int column)
          continue;
       if (this->board[potential_move.first][potential_move.second].getColor() == -1)
       {
-         moves.push_back(new ChessMove(row, column, potential_move.first, potential_move.second, currentPlayer, KNIGHT, -1, -1));
+         moves.push_back(std::make_shared<ChessMove>(row, column, potential_move.first, potential_move.second, currentPlayer, KNIGHT, -1, -1));
       }
       else
       {
-         moves.push_back(new ChessMove(row, column, potential_move.first, potential_move.second, currentPlayer, KNIGHT, potential_move.first, potential_move.second));
+         moves.push_back(std::make_shared<ChessMove>(row, column, potential_move.first, potential_move.second, currentPlayer, KNIGHT, potential_move.first, potential_move.second));
       }
    }
    return moves;
 }
 
-std::vector<ChessMove *> Chess::getBishopMoves(int row, int column)
+std::vector<std::shared_ptr<ChessMove>> Chess::getBishopMoves(int row, int column)
 {
    std::vector<std::pair<int, int>> offsets = {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
-   std::vector<ChessMove *> moves;
+   std::vector<std::shared_ptr<ChessMove>> moves;
    for (auto offset : offsets)
    { // for every direction
       auto new_row = row + offset.first;
@@ -199,10 +199,10 @@ std::vector<ChessMove *> Chess::getBishopMoves(int row, int column)
          if (this->board[new_row][new_col].getColor() == currentPlayer) // blocked by own piece
             break;
          if (this->board[new_row][new_col].getColor() == -1) // empty
-            moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, BISHOP, -1, -1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, BISHOP, -1, -1));
          else if (this->board[new_row][new_col].getColor() == 1 - currentPlayer) // takes
          {
-            moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, BISHOP, new_row, new_col));
+            moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, BISHOP, new_row, new_col));
             break; // cannot go further
          }
          new_row = new_row + offset.first;
@@ -212,10 +212,10 @@ std::vector<ChessMove *> Chess::getBishopMoves(int row, int column)
    return moves;
 }
 
-std::vector<ChessMove *> Chess::getRookMoves(int row, int column)
+std::vector<std::shared_ptr<ChessMove>> Chess::getRookMoves(int row, int column)
 {
    std::vector<std::pair<int, int>> offsets = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-   std::vector<ChessMove *> moves;
+   std::vector<std::shared_ptr<ChessMove>> moves;
    for (auto offset : offsets) // for every direction
    {
       auto new_row = row + offset.first;
@@ -225,10 +225,10 @@ std::vector<ChessMove *> Chess::getRookMoves(int row, int column)
          if (this->board[new_row][new_col].getColor() == currentPlayer) // blocked by own piece
             break;
          if (this->board[new_row][new_col].getColor() == -1) // empty
-            moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, ROOK, -1, -1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, ROOK, -1, -1));
          else if (this->board[new_row][new_col].getColor() == 1 - currentPlayer) // takes
          {
-            moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, ROOK, new_row, new_col));
+            moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, ROOK, new_row, new_col));
             break; // cannot go further
          }
          new_row = new_row + offset.first;
@@ -238,10 +238,10 @@ std::vector<ChessMove *> Chess::getRookMoves(int row, int column)
    return moves;
 }
 
-std::vector<ChessMove *> Chess::getKingMoves(int row, int column)
+std::vector<std::shared_ptr<ChessMove>> Chess::getKingMoves(int row, int column)
 {
    std::vector<std::pair<int, int>> offsets = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
-   std::vector<ChessMove *> moves;
+   std::vector<std::shared_ptr<ChessMove>> moves;
    for (auto offset : offsets) // for every direction
    {
       auto new_row = row + offset.first;
@@ -251,19 +251,19 @@ std::vector<ChessMove *> Chess::getKingMoves(int row, int column)
          if (this->board[new_row][new_col].getColor() != currentPlayer) // not blocked by own piece
          {
             if (this->board[new_row][new_col].getColor() == -1) // empty
-               moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, KING, -1, -1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, KING, -1, -1));
             else if (this->board[new_row][new_col].getColor() == 1 - currentPlayer) // takes
-               moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, KING, new_row, new_col));
+               moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, KING, new_row, new_col));
          }
       }
    }
    return moves;
 }
 
-std::vector<ChessMove *> Chess::getQueenMoves(int row, int column)
+std::vector<std::shared_ptr<ChessMove>> Chess::getQueenMoves(int row, int column)
 {
    std::vector<std::pair<int, int>> offsets = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
-   std::vector<ChessMove *> moves;
+   std::vector<std::shared_ptr<ChessMove>> moves;
    for (auto offset : offsets) // for every direction
    {
       auto new_row = row + offset.first;
@@ -273,10 +273,10 @@ std::vector<ChessMove *> Chess::getQueenMoves(int row, int column)
          if (this->board[new_row][new_col].getColor() == currentPlayer) // blocked by own piece
             break;
          if (this->board[new_row][new_col].getColor() == -1) // empty
-            moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, QUEEN, -1, -1));
+            moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, QUEEN, -1, -1));
          else if (this->board[new_row][new_col].getColor() == 1 - currentPlayer) // takes
          {
-            moves.push_back(new ChessMove(row, column, new_row, new_col, currentPlayer, QUEEN, new_row, new_col));
+            moves.push_back(std::make_shared<ChessMove>(row, column, new_row, new_col, currentPlayer, QUEEN, new_row, new_col));
             break; // cannot go further
          }
          new_row = new_row + offset.first;
@@ -382,10 +382,10 @@ bool Chess::canPlayerCastle(int color, int side)
          return false;
 
       Chess gameCopy(*this); // check if will go over attacked fields
-      gameCopy.simulateMove(new ChessMove(king.first, king.second, king.first, king.second - 1, color, KING, -1, -1));
+      gameCopy.simulateMove(std::make_shared<ChessMove>(king.first, king.second, king.first, king.second - 1, color, KING, -1, -1));
       if (gameCopy.isUnderCheck(color))
          return false;
-      gameCopy.simulateMove(new ChessMove(king.first, king.second - 1, king.first, king.second - 2, color, KING, -1, -1));
+      gameCopy.simulateMove(std::make_shared<ChessMove>(king.first, king.second - 1, king.first, king.second - 2, color, KING, -1, -1));
       if (gameCopy.isUnderCheck(color))
          return false;
    }
@@ -402,10 +402,10 @@ bool Chess::canPlayerCastle(int color, int side)
          return false;
 
       Chess gameCopy(*this); // check if will go over attacked fields
-      gameCopy.simulateMove(new ChessMove(king.first, king.second, king.first, king.second + 1, color, KING, -1, -1));
+      gameCopy.simulateMove(std::make_shared<ChessMove>(king.first, king.second, king.first, king.second + 1, color, KING, -1, -1));
       if (gameCopy.isUnderCheck(color))
          return false;
-      gameCopy.simulateMove(new ChessMove(king.first, king.second + 1, king.first, king.second + 2, color, KING, -1, -1));
+      gameCopy.simulateMove(std::make_shared<ChessMove>(king.first, king.second + 1, king.first, king.second + 2, color, KING, -1, -1));
       if (gameCopy.isUnderCheck(color))
          return false;
    }
@@ -516,15 +516,15 @@ Chess::Chess(Chess &game)
 
 // public
 
-std::vector<Move *> Chess::getPossibleMoves()
+std::vector<std::shared_ptr<Move>> Chess::getPossibleMoves()
 {
-   std::vector<ChessMove *> potentialMoves;
+   std::vector<std::shared_ptr<ChessMove>> potentialMoves;
    // get potential moves
    for (int i = 0; i < 8; i++)
    {
       for (int j = 0; j < 8; j++)
       {
-         std::vector<ChessMove *> temp;
+         std::vector<std::shared_ptr<ChessMove>> temp;
          if (this->board[i][j].getColor() != currentPlayer)
             continue;
          switch (this->board[i][j].getType())
@@ -552,7 +552,7 @@ std::vector<Move *> Chess::getPossibleMoves()
       }
    }
    // filter out illegal ones
-   std::vector<Move *> legalMoves;
+   std::vector<std::shared_ptr<Move>> legalMoves;
    for (auto move : potentialMoves)
    {
       Chess gameCopy(*this);
@@ -563,17 +563,17 @@ std::vector<Move *> Chess::getPossibleMoves()
    // add castling moves
    auto king = currentPlayer == WHITE ? this->whiteKing : this->blackKing;
    if (this->canPlayerCastle(currentPlayer, 0))
-      legalMoves.push_back(new ChessMove(king.first, king.second, king.first, king.second - 2, currentPlayer, KING, -1, -1));
+      legalMoves.push_back(std::make_shared<ChessMove>(king.first, king.second, king.first, king.second - 2, currentPlayer, KING, -1, -1));
 
    if (this->canPlayerCastle(currentPlayer, 1))
-      legalMoves.push_back(new ChessMove(king.first, king.second, king.first, king.second + 2, currentPlayer, KING, -1, -1));
+      legalMoves.push_back(std::make_shared<ChessMove>(king.first, king.second, king.first, king.second + 2, currentPlayer, KING, -1, -1));
 
    return legalMoves;
 }
 
-void Chess::simulateMove(Move *move)
+void Chess::simulateMove(std::shared_ptr<Move> move)
 {
-   auto cmove = static_cast<ChessMove *>(move);
+   auto cmove = std::static_pointer_cast<ChessMove>(move);
    this->movesHistory.push_back(cmove);
    if (cmove->getPiece() == KING) // update king position
    {
@@ -623,7 +623,7 @@ void Chess::simulateMove(Move *move)
    this->positionHistory[this->encodedPosition]++;
 }
 
-int Chess::gameStatus(std::vector<Move *> moves)
+int Chess::gameStatus(std::vector<std::shared_ptr<Move>> moves)
 {
    if (this->isUnderCheck(currentPlayer) and moves.size() == 0)
       return GameStatus::CHECK_MATE;
@@ -654,17 +654,17 @@ int Chess::gameStatus(std::vector<Move *> moves)
 
 void Chess::run(bool debug)
 {
-   std::vector<Move *> possibleMoves = this->getPossibleMoves();
+   std::vector<std::shared_ptr<Move>> possibleMoves = this->getPossibleMoves();
    int count = 0;
    while (this->gameStatus(possibleMoves) == GameStatus::IN_PROGRESS)
    {
-      ChessMove *selectedMove = static_cast<ChessMove *>(possibleMoves[rand() % possibleMoves.size()]);
+      std::shared_ptr<ChessMove> selectedMove = std::static_pointer_cast<ChessMove>(possibleMoves[rand() % possibleMoves.size()]);
       if (debug)
       {
          std::cout << "Available: " << std::endl;
          for (unsigned i = 0; i < possibleMoves.size(); i++)
          {
-            auto move = static_cast<ChessMove *>(possibleMoves[i]);
+            auto move = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
             std::cout << move->getFromRow() << " " << move->getFromCol() << " " << move->getToRow() << " " << move->getToCol() << " " << move->getPiece() << " " << move->getColor() << std::endl;
          }
          std::cout << "Chosen: " << std::endl;

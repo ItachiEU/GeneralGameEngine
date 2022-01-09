@@ -17,7 +17,7 @@ private:
    std::vector<std::vector<ChessPiece>> board;
    std::pair<int, int> whiteKing;
    std::pair<int, int> blackKing;
-   std::vector<ChessMove *> movesHistory;
+   std::vector<std::shared_ptr<ChessMove>> movesHistory;
    std::unordered_map<std::string, int> positionHistory;
    bool whiteKingMoved;
    bool blackKingMoved;
@@ -28,12 +28,12 @@ private:
    std::string encodedPosition;
 
    void initBoard(std::vector<std::vector<ChessPiece>> &board);
-   std::vector<ChessMove *> getPawnMoves(int row, int column);
-   std::vector<ChessMove *> getKnightMoves(int row, int column);
-   std::vector<ChessMove *> getBishopMoves(int row, int column);
-   std::vector<ChessMove *> getRookMoves(int row, int column);
-   std::vector<ChessMove *> getKingMoves(int row, int column);
-   std::vector<ChessMove *> getQueenMoves(int row, int column);
+   std::vector<std::shared_ptr<ChessMove>> getPawnMoves(int row, int column);
+   std::vector<std::shared_ptr<ChessMove>> getKnightMoves(int row, int column);
+   std::vector<std::shared_ptr<ChessMove>> getBishopMoves(int row, int column);
+   std::vector<std::shared_ptr<ChessMove>> getRookMoves(int row, int column);
+   std::vector<std::shared_ptr<ChessMove>> getKingMoves(int row, int column);
+   std::vector<std::shared_ptr<ChessMove>> getQueenMoves(int row, int column);
    bool isUnderCheck(int color);
    bool canPlayerCastle(int color, int side);
    void handleCastling(bool kingside);
@@ -43,7 +43,7 @@ public:
    Chess();
    Chess(Chess &game);
    void run(bool debug = false);
-   std::vector<Move *> getPossibleMoves();
-   void simulateMove(Move *move);
-   int gameStatus(std::vector<Move *> moves);
+   std::vector<std::shared_ptr<Move>> getPossibleMoves();
+   void simulateMove(std::shared_ptr<Move> move);
+   int gameStatus(std::vector<std::shared_ptr<Move>> moves);
 };
