@@ -3,9 +3,8 @@
 int main()
 {
    srand(time(NULL));
-   Chess game;
-
-   game.run(true);
+   std::shared_ptr<Game> game = std::make_shared<Chess>();
+   game->run(true);
 
    return 0;
 }

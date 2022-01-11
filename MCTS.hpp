@@ -6,11 +6,15 @@ class MCTS
 {
 private:
    std::shared_ptr<Node> root;
+   std::shared_ptr<Node> treePolicy(std::shared_ptr<Node> node);
+   std::shared_ptr<Node> bestChild(std::shared_ptr<Node> node, int currentPlayer);
+   std::shared_ptr<Node> expand(std::shared_ptr<Node> node);
+   double simulate(std::shared_ptr<Node> root);
+   void backpropagate(std::shared_ptr<Node> end, int player, int result);
 
 public:
-   MCTS(Game *game);
-   std::shared_ptr<Node> select();
-   Node *expand();
-   int simulate(std::shared_ptr<Node> root);
-   void backpropagate(std::shared_ptr<Node> end);
+   MCTS(std::shared_ptr<Game> game);
+   void run();
+   std::shared_ptr<Node> getRoot();
+   void setRoot(std::shared_ptr<Node> node);
 };
