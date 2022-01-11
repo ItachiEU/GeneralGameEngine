@@ -1,4 +1,5 @@
 #include "Chess.hpp"
+#include "MCTS.hpp"
 
 // helper functions
 
@@ -65,7 +66,7 @@ void fillRoyal(std::vector<std::vector<ChessPiece>> &board)
 // private
 void Chess::initBoard(std::vector<std::vector<ChessPiece>> &board)
 {
-   this->board.assign(8, std::vector<ChessPiece>(8));
+   // this->board.assign(8, std::vector<ChessPiece>(8));
    fillPawns(this->board);
    fillKnights(this->board);
    fillBishops(this->board);
@@ -414,10 +415,13 @@ bool Chess::canPlayerCastle(int color, int side)
 
 void Chess::handleCastling(bool kingside)
 {
+   std::cerr << "IN CASTLING" << std::endl;
    if (kingside)
    {
+      std::cerr << "KINGSIDE" << std::endl;
       auto king = this->currentPlayer == WHITE ? this->whiteKing : this->blackKing;
-      this->board[king.first][king.second] = ChessPiece();
+      this->board[king.first][king.second].setColor(-1);
+      this->board[king.first][king.second].setType(Piece::EMPTY);
 
       this->board[king.first][king.second + 2].setColor(this->currentPlayer);
       this->board[king.first][king.second + 2].setType(KING);
@@ -437,15 +441,21 @@ void Chess::handleCastling(bool kingside)
 
       // move the rook
       auto rook = this->currentPlayer == WHITE ? std::make_pair(0, 0) : std::make_pair(7, 7);
-      this->board[rook.first][rook.second] = ChessPiece();
+
+      this->board[rook.first][rook.second].setColor(-1);
+      this->board[rook.first][rook.second].setType(Piece::EMPTY);
+
       this->board[rook.first][rook.second - 2].setColor(this->currentPlayer);
       this->board[rook.first][rook.second - 2].setType(ROOK);
    }
    else
    {
+      std::cerr << "QUEENSIDE" << std::endl;
       auto king = this->currentPlayer == WHITE ? this->whiteKing : this->blackKing;
-      this->board[king.first][king.second] = ChessPiece();
+      this->board[king.first][king.second].setColor(-1);
+      this->board[king.first][king.second].setType(Piece::EMPTY);
 
+      std::cerr << king.second - 2 << std::endl;
       this->board[king.first][king.second - 2].setColor(this->currentPlayer);
       this->board[king.first][king.second - 2].setType(KING);
 
@@ -464,10 +474,15 @@ void Chess::handleCastling(bool kingside)
 
       // move the rook
       auto rook = this->currentPlayer == WHITE ? std::make_pair(0, 7) : std::make_pair(7, 7);
-      this->board[rook.first][rook.second] = ChessPiece();
+
+      this->board[rook.first][rook.second].setColor(-1);
+      this->board[rook.first][rook.second].setType(Piece::EMPTY);
+
+      std::cerr << king.second + 2 << std::endl;
       this->board[rook.first][rook.second + 2].setColor(this->currentPlayer);
       this->board[rook.first][rook.second + 2].setType(ROOK);
    }
+   std::cerr << "QUITTING CASTLING" << std::endl;
 }
 
 std::string Chess::encodePosition()
@@ -483,7 +498,7 @@ std::string Chess::encodePosition()
 }
 
 // constructor
-Chess::Chess()
+Chess::Chess() : board(8, std::vector<ChessPiece>(8))
 {
    this->currentPlayer = Player::WHITE;
    this->initBoard(this->board);
@@ -514,6 +529,27 @@ Chess::Chess(Chess &game)
    this->blackQueenSideRookMoved = game.blackQueenSideRookMoved;
 }
 
+Chess::Chess(Chess *game)
+{
+   this->currentPlayer = game->getCurrentPlayer();
+   this->board = game->board;
+   this->movesHistory = game->movesHistory;
+   this->positionHistory = game->positionHistory;
+   this->encodedPosition = game->encodedPosition;
+   this->blackKing = game->blackKing;
+   this->whiteKing = game->whiteKing;
+   this->whiteKingMoved = game->whiteKingMoved;
+   this->blackKingMoved = game->blackKingMoved;
+   this->whiteKingSideRookMoved = game->whiteKingSideRookMoved;
+   this->whiteQueenSideRookMoved = game->whiteQueenSideRookMoved;
+   this->blackKingSideRookMoved = game->blackKingSideRookMoved;
+   this->blackQueenSideRookMoved = game->blackQueenSideRookMoved;
+}
+
+std::shared_ptr<Game> Chess::clone()
+{
+   return std::make_shared<Chess>(this);
+}
 // public
 
 std::vector<std::shared_ptr<Move>> Chess::getPossibleMoves()
@@ -654,11 +690,27 @@ int Chess::gameStatus(std::vector<std::shared_ptr<Move>> moves)
 
 void Chess::run(bool debug)
 {
+   MCTS mcts(std::make_shared<Chess>(this));
    std::vector<std::shared_ptr<Move>> possibleMoves = this->getPossibleMoves();
    int count = 0;
    while (this->gameStatus(possibleMoves) == GameStatus::IN_PROGRESS)
    {
-      std::shared_ptr<ChessMove> selectedMove = std::static_pointer_cast<ChessMove>(possibleMoves[rand() % possibleMoves.size()]);
+      mcts.run();
+      auto root = mcts.getRoot();
+      double bestScore = -1.0;
+      std::shared_ptr<ChessMove> selectedMove;
+      int chosenChild = 0;
+      for (auto son : root->getChildren())
+      {
+         double score = son.second->getSimulations() == 0 ? 0.0 : (double)(son.second->getScore(this->currentPlayer) / (double)son.second->getSimulations());
+
+         if (score > bestScore)
+         {
+            selectedMove = std::static_pointer_cast<ChessMove>(root->getPossibleMoves()[son.first]);
+            bestScore = score;
+            chosenChild = son.first;
+         }
+      }
       if (debug)
       {
          std::cout << "Available: " << std::endl;
@@ -671,10 +723,14 @@ void Chess::run(bool debug)
          std::cout << selectedMove->getFromRow() << " " << selectedMove->getFromCol() << " " << selectedMove->getToRow() << " " << selectedMove->getToCol() << " " << selectedMove->getPiece() << " " << selectedMove->getColor() << std::endl;
       }
       this->simulateMove(selectedMove);
-
       this->currentPlayer = 1 - this->currentPlayer;
       possibleMoves = this->getPossibleMoves();
       count++;
+
+      if (mcts.getRoot()->getChildren().count(chosenChild) > 0)
+         mcts.setRoot(mcts.getRoot()->getChildren()[chosenChild]);
+      else
+         mcts.setRoot(std::make_shared<Node>(possibleMoves, std::make_shared<Chess>(this), mcts.getRoot()));
    }
    std::cout << "Game finished" << std::endl;
 }

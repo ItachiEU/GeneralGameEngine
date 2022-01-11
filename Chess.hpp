@@ -42,8 +42,10 @@ private:
 public:
    Chess();
    Chess(Chess &game);
+   Chess(Chess *game);
    void run(bool debug = false);
    std::vector<std::shared_ptr<Move>> getPossibleMoves();
    void simulateMove(std::shared_ptr<Move> move);
    int gameStatus(std::vector<std::shared_ptr<Move>> moves);
+   std::shared_ptr<Game> clone();
 };
