@@ -10,7 +10,6 @@ void MCTS::run()
    int player = this->getRoot()->getGame()->getCurrentPlayer();
    for (int i = 0; i < 10; i++) // placeholder
    {
-      std::cerr << "in mcts run - iteration: " << i << std::endl;
       std::shared_ptr<Node> node(this->treePolicy(this->getRoot()));
 
       int result = this->simulate(node);
