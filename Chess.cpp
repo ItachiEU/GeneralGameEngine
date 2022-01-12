@@ -415,10 +415,39 @@ bool Chess::canPlayerCastle(int color, int side)
 
 void Chess::handleCastling(bool kingside)
 {
-   std::cerr << "IN CASTLING" << std::endl;
    if (kingside)
    {
-      std::cerr << "KINGSIDE" << std::endl;
+      auto king = this->currentPlayer == WHITE ? this->whiteKing : this->blackKing;
+      this->board[king.first][king.second].setColor(-1);
+      this->board[king.first][king.second].setType(Piece::EMPTY);
+
+      this->board[king.first][king.second - 2].setColor(this->currentPlayer);
+      this->board[king.first][king.second - 2].setType(KING);
+
+      if (this->currentPlayer == WHITE)
+      {
+         this->whiteKing = std::make_pair(king.first, king.second - 2);
+         this->whiteKingMoved = true;
+         this->whiteKingSideRookMoved = true;
+      }
+      else
+      {
+         this->blackKing = std::make_pair(king.first, king.second - 2);
+         this->blackKingMoved = true;
+         this->whiteQueenSideRookMoved = true;
+      }
+
+      // move the rook
+      auto rook = this->currentPlayer == WHITE ? std::make_pair(0, 0) : std::make_pair(7, 0);
+
+      this->board[rook.first][rook.second].setColor(-1);
+      this->board[rook.first][rook.second].setType(Piece::EMPTY);
+
+      this->board[rook.first][rook.second + 2].setColor(this->currentPlayer);
+      this->board[rook.first][rook.second + 2].setType(ROOK);
+   }
+   else
+   {
       auto king = this->currentPlayer == WHITE ? this->whiteKing : this->blackKing;
       this->board[king.first][king.second].setColor(-1);
       this->board[king.first][king.second].setType(Piece::EMPTY);
@@ -430,44 +459,11 @@ void Chess::handleCastling(bool kingside)
       {
          this->whiteKing = std::make_pair(king.first, king.second + 2);
          this->whiteKingMoved = true;
-         this->whiteKingSideRookMoved = true;
+         this->whiteQueenSideRookMoved = true;
       }
       else
       {
          this->blackKing = std::make_pair(king.first, king.second + 2);
-         this->blackKingMoved = true;
-         this->whiteQueenSideRookMoved = true;
-      }
-
-      // move the rook
-      auto rook = this->currentPlayer == WHITE ? std::make_pair(0, 0) : std::make_pair(7, 7);
-
-      this->board[rook.first][rook.second].setColor(-1);
-      this->board[rook.first][rook.second].setType(Piece::EMPTY);
-
-      this->board[rook.first][rook.second - 2].setColor(this->currentPlayer);
-      this->board[rook.first][rook.second - 2].setType(ROOK);
-   }
-   else
-   {
-      std::cerr << "QUEENSIDE" << std::endl;
-      auto king = this->currentPlayer == WHITE ? this->whiteKing : this->blackKing;
-      this->board[king.first][king.second].setColor(-1);
-      this->board[king.first][king.second].setType(Piece::EMPTY);
-
-      std::cerr << king.second - 2 << std::endl;
-      this->board[king.first][king.second - 2].setColor(this->currentPlayer);
-      this->board[king.first][king.second - 2].setType(KING);
-
-      if (this->currentPlayer == WHITE)
-      {
-         this->whiteKing = std::make_pair(king.first, king.second - 2);
-         this->whiteKingMoved = true;
-         this->whiteQueenSideRookMoved = true;
-      }
-      else
-      {
-         this->blackKing = std::make_pair(king.first, king.second - 2);
          this->blackKingMoved = true;
          this->blackQueenSideRookMoved = true;
       }
@@ -478,11 +474,9 @@ void Chess::handleCastling(bool kingside)
       this->board[rook.first][rook.second].setColor(-1);
       this->board[rook.first][rook.second].setType(Piece::EMPTY);
 
-      std::cerr << king.second + 2 << std::endl;
-      this->board[rook.first][rook.second + 2].setColor(this->currentPlayer);
-      this->board[rook.first][rook.second + 2].setType(ROOK);
+      this->board[rook.first][rook.second - 3].setColor(this->currentPlayer);
+      this->board[rook.first][rook.second - 3].setType(ROOK);
    }
-   std::cerr << "QUITTING CASTLING" << std::endl;
 }
 
 std::string Chess::encodePosition()
@@ -561,7 +555,7 @@ std::vector<std::shared_ptr<Move>> Chess::getPossibleMoves()
       for (int j = 0; j < 8; j++)
       {
          std::vector<std::shared_ptr<ChessMove>> temp;
-         if (this->board[i][j].getColor() != currentPlayer)
+         if (this->board[i][j].getColor() != this->getCurrentPlayer())
             continue;
          switch (this->board[i][j].getType())
          {
@@ -591,10 +585,12 @@ std::vector<std::shared_ptr<Move>> Chess::getPossibleMoves()
    std::vector<std::shared_ptr<Move>> legalMoves;
    for (auto move : potentialMoves)
    {
-      Chess gameCopy(*this);
-      gameCopy.simulateMove(move);
-      if (!gameCopy.isUnderCheck(currentPlayer))
+      std::shared_ptr<Chess> gameCopy = std::static_pointer_cast<Chess>(this->clone());
+      gameCopy->simulateMove(move);
+      if (!gameCopy->isUnderCheck(currentPlayer))
+      {
          legalMoves.push_back(move);
+      }
    }
    // add castling moves
    auto king = currentPlayer == WHITE ? this->whiteKing : this->blackKing;
@@ -603,13 +599,13 @@ std::vector<std::shared_ptr<Move>> Chess::getPossibleMoves()
 
    if (this->canPlayerCastle(currentPlayer, 1))
       legalMoves.push_back(std::make_shared<ChessMove>(king.first, king.second, king.first, king.second + 2, currentPlayer, KING, -1, -1));
-
    return legalMoves;
 }
 
 void Chess::simulateMove(std::shared_ptr<Move> move)
 {
    auto cmove = std::static_pointer_cast<ChessMove>(move);
+   assert(this->getCurrentPlayer() == cmove->getColor());
    this->movesHistory.push_back(cmove);
    if (cmove->getPiece() == KING) // update king position
    {
@@ -618,6 +614,7 @@ void Chess::simulateMove(std::shared_ptr<Move> move)
          this->handleCastling(cmove->getFromCol() > cmove->getToCol());
          this->encodedPosition = this->encodePosition();
          this->positionHistory[this->encodedPosition]++;
+
          return; // everything handled
       }
       if (cmove->getColor() == BLACK)
@@ -648,9 +645,13 @@ void Chess::simulateMove(std::shared_ptr<Move> move)
             this->whiteKingSideRookMoved = true;
       }
    }
-   this->board[cmove->getFromRow()][cmove->getFromCol()] = ChessPiece(); // clear field where it was
-   if (cmove->getTakeRow() != -1 and cmove->getTakeCol() != -1)
-      this->board[cmove->getTakeRow()][cmove->getTakeCol()] = ChessPiece(); // clear field it took
+   this->board[cmove->getFromRow()][cmove->getFromCol()].setColor(-1); // clear field where it was
+   this->board[cmove->getFromRow()][cmove->getFromCol()].setType(Piece::EMPTY);
+   if (cmove->getTakeRow() != -1 and cmove->getTakeCol() != -1) // clear field it took
+   {
+      this->board[cmove->getTakeRow()][cmove->getTakeCol()].setColor(-1);
+      this->board[cmove->getTakeRow()][cmove->getTakeCol()].setType(Piece::EMPTY);
+   }
 
    this->board[cmove->getToRow()][cmove->getToCol()].setColor(cmove->getColor());
    this->board[cmove->getToRow()][cmove->getToCol()].setType(cmove->getPiece());
@@ -723,7 +724,7 @@ void Chess::run(bool debug)
          std::cout << selectedMove->getFromRow() << " " << selectedMove->getFromCol() << " " << selectedMove->getToRow() << " " << selectedMove->getToCol() << " " << selectedMove->getPiece() << " " << selectedMove->getColor() << std::endl;
       }
       this->simulateMove(selectedMove);
-      this->currentPlayer = 1 - this->currentPlayer;
+      this->setCurrentPlayer(1 - this->getCurrentPlayer());
       possibleMoves = this->getPossibleMoves();
       count++;
 
