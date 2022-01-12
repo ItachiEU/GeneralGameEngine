@@ -8,14 +8,14 @@ MCTS::MCTS(std::shared_ptr<Game> game)
 void MCTS::run()
 {
    int player = this->getRoot()->getGame()->getCurrentPlayer();
-   for (int i = 0; i < 1000; i++) // placeholder
+   for (int i = 0; i < 10; i++) // placeholder
    {
-      std::shared_ptr<Node> node = this->treePolicy(this->getRoot());
-      std::cerr << "after policy" << std::endl;
+      std::cerr << "in mcts run - iteration: " << i << std::endl;
+      std::shared_ptr<Node> node(this->treePolicy(this->getRoot()));
+
       int result = this->simulate(node);
-      std::cerr << "after simulate" << std::endl;
+
       backpropagate(node, player, result);
-      std::cerr << "after propagate" << std::endl;
    }
 }
 
@@ -31,10 +31,7 @@ void MCTS::setRoot(std::shared_ptr<Node> node)
 
 std::shared_ptr<Node> MCTS::treePolicy(std::shared_ptr<Node> node)
 {
-   std::cerr << "og node children size: " << node->getChildren().size() << std::endl;
    int currentPlayer = node->getGame()->getCurrentPlayer();
-
-   std::cerr << "got player in policy" << std::endl;
    while (node->getTerminal() == false)
    {
       if (node->getLastExpanded() < (int)(node->getPossibleMoves().size() - 1))
@@ -43,9 +40,7 @@ std::shared_ptr<Node> MCTS::treePolicy(std::shared_ptr<Node> node)
       }
       else
       {
-         std::cerr << "node children size: " << node->getChildren().size() << std::endl;
          node = this->bestChild(node, currentPlayer);
-         std::cerr << "node from best child " << (bool)(node == nullptr) << std::endl;
       }
       currentPlayer = 1 - currentPlayer;
    }
@@ -56,15 +51,12 @@ std::shared_ptr<Node> MCTS::bestChild(std::shared_ptr<Node> node, int currentPla
 {
    double bestScore = -1.0;
    std::shared_ptr<Node> chosenChild = nullptr;
-   std::cerr << node->getChildren().size() << std::endl;
    for (auto son : node->getChildren())
    {
       double score = (double)(son.second->getScore(currentPlayer) / (double)son.second->getSimulations()) + 1.4 * sqrt((2 * log(node->getSimulations()) / son.second->getSimulations()));
-      std::cerr << "score: " << score << std::endl;
       if (score > bestScore)
       {
          chosenChild = son.second;
-         std::cerr << "is chosen child nullptr: " << (bool)(chosenChild == nullptr) << std::endl;
          bestScore = score;
       }
    }
@@ -75,9 +67,12 @@ std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
 {
    node->setLastExpanded(node->getLastExpanded() + 1);
    auto gameCopy = node->getGame()->clone();
+
    gameCopy->simulateMove(node->getPossibleMoves()[node->getLastExpanded()]);
+   gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
 
    auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
+
    node->getChildren()[node->getLastExpanded()] = child;
    if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
       child->setTerminal(true);
@@ -94,8 +89,11 @@ double MCTS::simulate(std::shared_ptr<Node> node)
    while (gameCopy->gameStatus(possibleMoves) == -1)
    {
       std::shared_ptr<Move> move = possibleMoves[rand() % possibleMoves.size()];
+
       gameCopy->simulateMove(move);
+
       gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
+
       possibleMoves = gameCopy->getPossibleMoves();
    }
    double result;
