@@ -43,6 +43,7 @@ public:
    Chess();
    Chess(Chess &game);
    Chess(Chess *game);
+   void test();
    void run(bool debug = false);
    std::vector<std::shared_ptr<Move>> getPossibleMoves();
    void simulateMove(std::shared_ptr<Move> move);

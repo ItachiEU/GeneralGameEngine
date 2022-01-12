@@ -540,6 +540,29 @@ Chess::Chess(Chess *game)
    this->blackQueenSideRookMoved = game->blackQueenSideRookMoved;
 }
 
+void Chess::test()
+{
+   std::vector<std::shared_ptr<Move>> possibleMoves = this->getPossibleMoves();
+   int count = 0;
+   while (this->gameStatus(possibleMoves) == GameStatus::IN_PROGRESS)
+   {
+      std::cout << "Available: " << std::endl;
+      for (unsigned i = 0; i < possibleMoves.size(); i++)
+      {
+         auto move = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
+         std::cout << "move " << i << ": " << move->getFromRow() << " " << move->getFromCol() << " " << move->getToRow() << " " << move->getToCol() << " " << move->getPiece() << " " << move->getColor() << std::endl;
+      }
+      int index;
+      std::cin >> index;
+      std::shared_ptr<ChessMove> selectedMove = std::static_pointer_cast<ChessMove>(possibleMoves[index]);
+      this->simulateMove(selectedMove);
+      this->setCurrentPlayer(1 - this->getCurrentPlayer());
+      possibleMoves = this->getPossibleMoves();
+      count++;
+   }
+   std::cout << "Game finished" << std::endl;
+}
+
 std::shared_ptr<Game> Chess::clone()
 {
    return std::make_shared<Chess>(this);
@@ -720,9 +743,10 @@ void Chess::run(bool debug)
             auto move = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
             std::cout << move->getFromRow() << " " << move->getFromCol() << " " << move->getToRow() << " " << move->getToCol() << " " << move->getPiece() << " " << move->getColor() << std::endl;
          }
-         std::cout << "Chosen: " << std::endl;
-         std::cout << selectedMove->getFromRow() << " " << selectedMove->getFromCol() << " " << selectedMove->getToRow() << " " << selectedMove->getToCol() << " " << selectedMove->getPiece() << " " << selectedMove->getColor() << std::endl;
       }
+      std::cout << "Chosen: " << std::endl;
+      std::cout << selectedMove->getFromRow() << " " << selectedMove->getFromCol() << " " << selectedMove->getToRow() << " " << selectedMove->getToCol() << " " << selectedMove->getPiece() << " " << selectedMove->getColor() << std::endl;
+
       this->simulateMove(selectedMove);
       this->setCurrentPlayer(1 - this->getCurrentPlayer());
       possibleMoves = this->getPossibleMoves();
