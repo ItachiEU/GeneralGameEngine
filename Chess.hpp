@@ -38,6 +38,7 @@ private:
    bool canPlayerCastle(int color, int side);
    void handleCastling(bool kingside);
    std::string encodePosition();
+   std::string printBoard();
 
 public:
    Chess();
