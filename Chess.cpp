@@ -496,6 +496,19 @@ std::string Chess::encodePosition()
    return encoded;
 }
 
+std::string Chess::printBoard()
+{
+   std::string encoded;
+   for (int i = 0; i < 8; i++){
+      for (int j = 0; j < 8; j++){
+         encoded += PIECE_NAME[this->board[i][j].getType()];
+      }
+      encoded += "\n";
+   }
+
+   return encoded;
+}
+
 // constructor
 Chess::Chess() : board(8, std::vector<ChessPiece>(8))
 {

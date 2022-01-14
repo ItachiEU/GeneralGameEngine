@@ -62,12 +62,51 @@ std::shared_ptr<Node> MCTS::bestChild(std::shared_ptr<Node> node, int currentPla
    return chosenChild;
 }
 
-std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
+std::pair<std::shared_ptr<Move>, std::shared_ptr<Node>> MCTS::getBestMove()
+{
+   int best_cnt = -1;
+   std::shared_ptr<Node> chosenChild = nullptr;
+   std::shared_ptr<Move> chosenMove = nullptr;
+   for (auto son : root->getChildren())
+   {
+      if(son.second->getSimulations() > best_cnt)
+      {
+         chosenChild = son.second;
+         chosenMove = root->getPossibleMoves()[son.first];
+         best_cnt = son.second->getSimulations();
+      }
+   }
+   return make_pair(chosenMove, chosenChild);
+}
+
+void MCTS::doMove(std::shared_ptr<Move> move)
+{
+   int target_id = -1;
+   for(int i = 0; i < root->getPossibleMoves().size(); i++)
+   {
+      if(root->getPossibleMoves()[i]->eq(move))
+      {
+         target_id = i;
+         break;
+      }
+   }
+
+   assert (("move was not found in possible moves",target_id != -1));
+
+   if(root->getChildren().find(target_id) == root->getChildren().end())
+   {
+      this->expand(root, target_id);
+   }
+
+   this->setRoot(root->getChildren()[target_id]);
+}
+
+std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node, int move_id)
 {
    node->setLastExpanded(node->getLastExpanded() + 1);
    auto gameCopy = node->getGame()->clone();
 
-   gameCopy->simulateMove(node->getPossibleMoves()[node->getLastExpanded()]);
+   gameCopy->simulateMove(node->getPossibleMoves()[move_id]);
    gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
 
    auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
@@ -77,6 +116,11 @@ std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
       child->setTerminal(true);
 
    return child;
+}
+
+std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
+{
+   return this->expand(node, node->getLastExpanded()+1);
 }
 
 double MCTS::simulate(std::shared_ptr<Node> node)

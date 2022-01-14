@@ -76,3 +76,18 @@ void ChessMove::setTakeCol(int take_col)
 {
    this->take_col = take_col;
 }
+
+bool ChessMove::eq(std::shared_ptr<Move> other_m)
+{
+   std::shared_ptr<ChessMove> other = std::static_pointer_cast<ChessMove>(other_m);
+   return (
+      this->from_row == other->getFromRow() && 
+      this->from_col == other->getFromCol() &&
+      this->to_row == other->getToRow() &&
+      this->to_col == other->getToCol() &&
+      this->color == other->getColor() &&
+      this->piece == other->getPiece() &&
+      this->take_row == other->getTakeRow() &&
+      this->take_col == other->getTakeCol()
+   );
+}

@@ -31,4 +31,5 @@ public:
    void setColor(int color);
    void setTakeRow(int take_row);
    void setTakeCol(int take_col);
+   bool eq(std::shared_ptr<Move> other);
 };

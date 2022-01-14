@@ -9,6 +9,8 @@ enum Piece
    KING = 6
 };
 
+const char PIECE_NAME[7] = {' ', 'P', 'N', 'B', 'R', 'Q', 'K'};
+
 enum Player
 {
    WHITE = 0,
