@@ -25,8 +25,12 @@ int main()
          move = real_game->getPossibleMoves()[rand() % real_game->getPossibleMoves().size()];
       }
 
+      std::cout << real_game->getPossibleMoves().size() << std::endl;
+      std::cout << mcts.getRoot()->getChildren().size() << std::endl;
+
       mcts.doMove(move);
       real_game->simulateMove(move);
+      std::cout << mcts.getRoot()->getGame()->printBoard() << std::endl;
       std::cout << real_game->printBoard() << std::endl;
 
       moves = real_game->getPossibleMoves();

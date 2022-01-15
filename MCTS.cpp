@@ -82,7 +82,9 @@ std::pair<std::shared_ptr<Move>, std::shared_ptr<Node>> MCTS::getBestMove()
 void MCTS::doMove(std::shared_ptr<Move> move)
 {
    int target_id = -1;
-   for(int i = 0; i < root->getPossibleMoves().size(); i++)
+   int s = root->getPossibleMoves().size();
+   std::cout << "cnt: " << s << std::endl;
+   for(int i = 0; i < s; i++)
    {
       if(root->getPossibleMoves()[i]->eq(move))
       {
@@ -98,9 +100,12 @@ void MCTS::doMove(std::shared_ptr<Move> move)
       this->expand(root, target_id);
    }
 
+   std::cout <<"child cnt:" << root->getChildren()[target_id]->getPossibleMoves().size() << std::endl;
+
    this->setRoot(root->getChildren()[target_id]);
 }
 
+// this can't work like this right now
 std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node, int move_id)
 {
    node->setLastExpanded(node->getLastExpanded() + 1);
@@ -110,8 +115,9 @@ std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node, int move_id)
    gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
 
    auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
-
-   node->getChildren()[node->getLastExpanded()] = child;
+   std::cout << gameCopy->printBoard();
+   std::cout <<"sus:" << gameCopy->getPossibleMoves().size() <<"expanded child cnt:" << child->getPossibleMoves().size() << std::endl;
+   node->getChildren()[move_id] = child;
    if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
       child->setTerminal(true);
 
