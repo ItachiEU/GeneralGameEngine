@@ -83,7 +83,6 @@ void MCTS::doMove(std::shared_ptr<Move> move)
 {
    int target_id = -1;
    int s = root->getPossibleMoves().size();
-   std::cout << "cnt: " << s << std::endl;
    for(int i = 0; i < s; i++)
    {
       if(root->getPossibleMoves()[i]->eq(move))
@@ -93,40 +92,33 @@ void MCTS::doMove(std::shared_ptr<Move> move)
       }
    }
 
-   assert (("move was not found in possible moves",target_id != -1));
+   assert ((target_id != -1 && "move was not found in possible moves"));
 
    if(root->getChildren().find(target_id) == root->getChildren().end())
    {
-      this->expand(root, target_id);
+      auto gameCopy = root->getGame()->clone();
+      gameCopy->simulateMove(move);
+      gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
+      this->setRoot(std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy, root));
+   } else{
+      this->setRoot(root->getChildren()[target_id]);
    }
-
-   std::cout <<"child cnt:" << root->getChildren()[target_id]->getPossibleMoves().size() << std::endl;
-
-   this->setRoot(root->getChildren()[target_id]);
-}
-
-// this can't work like this right now
-std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node, int move_id)
-{
-   node->setLastExpanded(node->getLastExpanded() + 1);
-   auto gameCopy = node->getGame()->clone();
-
-   gameCopy->simulateMove(node->getPossibleMoves()[move_id]);
-   gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
-
-   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
-   std::cout << gameCopy->printBoard();
-   std::cout <<"sus:" << gameCopy->getPossibleMoves().size() <<"expanded child cnt:" << child->getPossibleMoves().size() << std::endl;
-   node->getChildren()[move_id] = child;
-   if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
-      child->setTerminal(true);
-
-   return child;
 }
 
 std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
 {
-   return this->expand(node, node->getLastExpanded()+1);
+   node->setLastExpanded(node->getLastExpanded() + 1);
+   auto gameCopy = node->getGame()->clone();
+
+   gameCopy->simulateMove(node->getPossibleMoves()[node->getLastExpanded()]);
+   gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
+
+   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
+   node->getChildren()[node->getLastExpanded()] = child;
+   if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
+      child->setTerminal(true);
+
+   return child;
 }
 
 double MCTS::simulate(std::shared_ptr<Node> node)

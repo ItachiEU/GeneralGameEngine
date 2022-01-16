@@ -501,7 +501,9 @@ std::string Chess::printBoard()
    std::string encoded;
    for (int i = 0; i < 8; i++){
       for (int j = 0; j < 8; j++){
-         encoded += PIECE_NAME[this->board[i][j].getType()];
+         auto piece = this->board[i][j];
+         int name_shift = (piece.getType()!=0)*(piece.getColor() == WHITE ? 0 : 'a' - 'A');
+         encoded += PIECE_NAME[piece.getType()] + name_shift;
       }
       encoded += "\n";
    }
