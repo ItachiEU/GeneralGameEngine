@@ -3,6 +3,6 @@
 
 class Move
 {
-    public:
-        virtual bool eq(std::shared_ptr<Move> other) = 0;
+public:
+    virtual bool eq(std::shared_ptr<Move> other) = 0;
 };

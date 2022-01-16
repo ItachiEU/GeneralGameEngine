@@ -25,16 +25,32 @@ int main()
          move = real_game->getPossibleMoves()[rand() % real_game->getPossibleMoves().size()];
       }
 
-      std::cout << real_game->getPossibleMoves().size() << std::endl;
-      std::cout << mcts.getRoot()->getChildren().size() << std::endl;
-
       mcts.doMove(move);
       real_game->simulateMove(move);
-      std::cout << mcts.getRoot()->getGame()->printBoard() << std::endl;
       std::cout << real_game->printBoard() << std::endl;
-
       moves = real_game->getPossibleMoves();
       player = 1 - player;
+      real_game->setCurrentPlayer(player);
+   }
+
+   switch (real_game->gameStatus(moves))
+   {
+      case GameStatus::DRAW:
+         std::cout << "Draw" << std::endl;
+         break;
+      case GameStatus::STALE_MATE:
+         std::cout << "Stalemate" << std::endl;
+         break;
+      case GameStatus::CHECK_MATE:
+         std::cout << "Checkmate, ";
+         if(player) {
+            std::cout << "Black wins" << std::endl;
+         } else {
+            std::cout << "White wins" << std::endl;
+         }
+         break;
+      default:
+         break;
    }
 
    return 0;
