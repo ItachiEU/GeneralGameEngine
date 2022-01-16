@@ -110,7 +110,7 @@ std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
    node->setLastExpanded(node->getLastExpanded() + 1);
    auto gameCopy = node->getGame()->clone();
 
-   gameCopy->simulateMove(node->getPossibleMoves()[move_id]);
+   gameCopy->simulateMove(node->getPossibleMoves()[node->getLastExpanded()]);
    gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
 
    auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy, node);
@@ -119,11 +119,6 @@ std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
       child->setTerminal(true);
 
    return child;
-}
-
-std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
-{
-   return this->expand(node, node->getLastExpanded()+1);
 }
 
 double MCTS::simulate(std::shared_ptr<Node> node)
