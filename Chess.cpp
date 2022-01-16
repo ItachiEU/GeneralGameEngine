@@ -382,6 +382,9 @@ bool Chess::canPlayerCastle(int color, int side)
       if (this->board[king.first][king.second - 2].getType() != EMPTY)
          return false;
 
+      if (this->board[king.first][0].getType() != ROOK or this->board[king.first][0].getColor() != color)
+         return false;
+
       Chess gameCopy(*this); // check if will go over attacked fields
       gameCopy.simulateMove(std::make_shared<ChessMove>(king.first, king.second, king.first, king.second - 1, color, KING, -1, -1));
       if (gameCopy.isUnderCheck(color))
@@ -400,6 +403,8 @@ bool Chess::canPlayerCastle(int color, int side)
       if (this->board[king.first][king.second + 1].getType() != EMPTY)
          return false;
       if (this->board[king.first][king.second + 2].getType() != EMPTY)
+         return false;
+      if (this->board[king.first][7].getType() != ROOK or this->board[king.first][7].getColor() != color)
          return false;
 
       Chess gameCopy(*this); // check if will go over attacked fields
