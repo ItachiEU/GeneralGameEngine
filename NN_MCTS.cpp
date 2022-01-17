@@ -42,17 +42,64 @@ std::shared_ptr<Node> NN_MCTS::treePolicy(std::shared_ptr<Node> node)
    int currentPlayer = node->getGame()->getCurrentPlayer();
    while (node->getTerminal() == false)
    {
-      if (node->getLastExpanded() < (int)(node->getPossibleMoves().size() - 1))
-      {
-         return this->expand(node);
-      }
-      else
-      {
-         node = this->bestChild(node, currentPlayer);
-      }
+      node = this->bestChild(node, currentPlayer);
+      if (node->getSimulations() == 0) break;
       currentPlayer = 1 - currentPlayer;
    }
    return node;
 }
-std::shared_ptr<Node> bestChild(std::shared_ptr<Node> node, int currentPlayer);
-std::shared_ptr<Node> expand(std::shared_ptr<Node> node);
+
+// Since expansions are also guided by the neural network, bestChild is now responsible for expanding
+std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int currentPlayer){
+   double bestScore = -1.0;
+   int chosenIndex = -1;
+   bool best_expand = false;
+
+   int s = node->getPossibleMoves().size();
+   double N_P = node->getSimulations();
+   for (int i = 0; i<s; i++)
+   {
+      double W = 0;
+      double N = 0;
+      bool expand = true;
+      if(node->getChildren().find(i) != node->getChildren().end())
+      {
+         W = node->getChildren()[i]->getScore(currentPlayer);
+         N = node->getChildren()[i]->getSimulations();
+         expand = false;
+      }
+      double c = 0.1;
+      double score = (W/N) + c*node->getMoveScores()[i]*sqrt(N_P)/(1+N);
+
+      if(score > bestScore)
+      {
+         bestScore = score;
+         chosenIndex = i;
+         best_expand = expand;
+      }
+   }
+   
+   if(best_expand)
+   {
+      return this->expand(node, chosenIndex);
+   }
+   else
+   {
+      return node->getChildren()[chosenIndex];
+   }
+}
+
+std::shared_ptr<Node> NN_MCTS::expand(std::shared_ptr<Node> node, int move_index)
+{
+   auto gameCopy = node->getGame()->clone();
+
+   gameCopy->simulateMove(node->getPossibleMoves()[move_index]);
+   gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
+
+   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
+   node->getChildren()[move_index] = child;
+   if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
+      child->setTerminal(true);
+
+   return child;
+}
