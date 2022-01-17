@@ -71,3 +71,13 @@ std::shared_ptr<Node> Node::getParent()
 {
    return this->parent.lock();
 }
+
+const std::vector<double> &Node::getMoveScores()
+{
+   return this->moveScores;
+}
+
+void Node::setMoveScores(const std::vector<double> &moveScores)
+{
+   this->moveScores = moveScores;
+}
