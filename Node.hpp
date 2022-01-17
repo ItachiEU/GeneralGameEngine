@@ -14,6 +14,7 @@ private:
    std::weak_ptr<Node> parent; // This can't be a shared pointer
    std::vector<std::shared_ptr<Move>> possibleMoves;
    std::unordered_map<int, std::shared_ptr<Node>> children;
+   std::vector<double> moveScores; // This should be in a new class that inherits from this one
 
 public:
    Node(std::vector<std::shared_ptr<Move>> moves, std::shared_ptr<Game> game, std::shared_ptr<Node> ancestor = nullptr);
@@ -29,4 +30,6 @@ public:
    std::unordered_map<int, std::shared_ptr<Node>> &getChildren();
    std::shared_ptr<Game> getGame();
    std::shared_ptr<Node> getParent();
+   const std::vector<double> &getMoveScores();
+   void setMoveScores(const std::vector<double> &moveScores);
 };
