@@ -103,17 +103,12 @@ double MCTS::simulate(std::shared_ptr<Node> node)
    return result;
 }
 
-void MCTS::backpropagate(std::shared_ptr<Node> end, int player, int result)
+void MCTS::backpropagate(std::shared_ptr<Node> end, int player, double result)
 {
    do
    {
-      if (result == 0.5)
-      {
-         end->setScore(0, end->getScore(0) + 0.5);
-         end->setScore(1, end->getScore(1) + 0.5);
-      }
-      else
-         end->setScore(player, result);
+      end->setScore(player, end->getScore(player) + result);
+      end->setScore(1-player, end->getScore(1-player) + (1-result));
       end->setSimulations(end->getSimulations() + 1);
 
       end = end->getParent();
