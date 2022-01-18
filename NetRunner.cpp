@@ -57,6 +57,7 @@ void NetRunner::run_loop()
       {
          inputs[i] = this->to_process[i];
       }
+      // std::cout << "running net" << std::endl;
       torch::Tensor input = torch::cat(inputs);
       torch::Tensor out = this->net->forward(input.to(*(this->device)));
       out = out.to(torch::kCPU);

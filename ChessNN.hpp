@@ -4,9 +4,9 @@
 class ResidualLayer : public torch::nn::Module
 {
 private:
-   torch::nn::Conv2d conv1;
-   torch::nn::Conv2d conv2;
-   torch::nn::LayerNorm norm;
+   torch::nn::Conv2d conv1 = nullptr;
+   torch::nn::Conv2d conv2 = nullptr;
+   torch::nn::LayerNorm norm = nullptr;
 
 public:
    ResidualLayer(int in_channels, int kernel_size);
@@ -16,7 +16,7 @@ public:
 class ChessNet : public Net
 {
 private:
-   torch::nn::Conv2d in_conv;
+   torch::nn::Conv2d in_conv = nullptr;
    std::shared_ptr<ResidualLayer> res1;
    std::shared_ptr<ResidualLayer> res2;
    std::shared_ptr<ResidualLayer> res3;
@@ -24,8 +24,8 @@ private:
    std::shared_ptr<ResidualLayer> res5;
    std::shared_ptr<ResidualLayer> res6;
    std::shared_ptr<ResidualLayer> res7;
-   torch::nn::Conv2d out_conv;
-   torch::nn::Linear out_linear;
+   torch::nn::Conv2d out_conv = nullptr;
+   torch::nn::Linear out_linear = nullptr;
 
 public:
    ChessNet(int channels, int kernel_size);
