@@ -12,13 +12,13 @@ public:
 
 class NN_MCTS : public MCTS
 {
-private:
+protected:
    std::shared_ptr<NetRunner> runner;
    std::shared_ptr<NN_Interface> nn_interface;
    double simulate(std::shared_ptr<Node> root);
    std::shared_ptr<Node> treePolicy(std::shared_ptr<Node> node);
    std::shared_ptr<Node> bestChild(std::shared_ptr<Node> node, int currentPlayer);
-   std::shared_ptr<Node> expand(std::shared_ptr<Node> node);
+   std::shared_ptr<Node> expand(std::shared_ptr<Node> node, int move_idx);
 
 public:
    NN_MCTS(std::shared_ptr<Game> game, std::shared_ptr<NetRunner> runner, std::shared_ptr<NN_Interface> interface);

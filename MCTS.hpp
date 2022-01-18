@@ -4,12 +4,12 @@
 
 class MCTS
 {
-private:
+protected:
    std::shared_ptr<Node> root;
-   std::shared_ptr<Node> treePolicy(std::shared_ptr<Node> node);
-   std::shared_ptr<Node> bestChild(std::shared_ptr<Node> node, int currentPlayer);
+   virtual std::shared_ptr<Node> treePolicy(std::shared_ptr<Node> node);
+   virtual std::shared_ptr<Node> bestChild(std::shared_ptr<Node> node, int currentPlayer);
    std::shared_ptr<Node> expand(std::shared_ptr<Node> node);
-   double simulate(std::shared_ptr<Node> root);
+   virtual double simulate(std::shared_ptr<Node> root);
    void backpropagate(std::shared_ptr<Node> end, int player, double result);
 
 public:

@@ -5,12 +5,14 @@ ResidualLayer::ResidualLayer(int in_channels, int kernel_size) : torch::nn::Modu
 {
     auto options = torch::nn::Conv2dOptions(in_channels, in_channels, kernel_size)
         .stride(1)
-        .padding(kernel_size / 2)
+        .padding(1)
         .bias(true);
+
+    auto norm_options = torch::nn::LayerNormOptions({in_channels, 8, 8});
 
     conv1 = register_module("conv1", torch::nn::Conv2d(options));
     conv2 = register_module("conv2", torch::nn::Conv2d(options));
-    norm = register_module("norm", torch::nn::LayerNorm(in_channels));
+    norm = register_module("norm", torch::nn::LayerNorm(norm_options));
 }
 
 torch::Tensor ResidualLayer::forward(torch::Tensor x)
@@ -26,12 +28,12 @@ ChessNet::ChessNet(int channels, int kernel_size) : Net()
     // each position has 7 piece options (one-hot) + 1 for piece color
     auto in_options = torch::nn::Conv2dOptions(8, channels, 1) 
         .stride(1)
-        .padding(kernel_size / 2)
+        .padding(0)
         .bias(true);
 
     auto out_options = torch::nn::Conv2dOptions(channels, 64, 1)
         .stride(1)
-        .padding(kernel_size / 2)
+        .padding(0)
         .bias(true);
 
     in_conv = register_module("in_conv", torch::nn::Conv2d(in_options));
@@ -57,7 +59,7 @@ torch::Tensor ChessNet::forward(torch::Tensor x)
     y = res6->forward(y);
     y = res7->forward(y);
     auto move_values = out_conv->forward(y).flatten(1,-1);
-    auto scores = out_linear->forward(y.mean({1,2}));
+    auto scores = out_linear->forward(y.mean({2,3}));
     return torch::cat({move_values, scores}, 1);
 }
 
@@ -72,7 +74,7 @@ torch::Tensor ChessNNInterface::getNNInput(std::shared_ptr<Game> game, int playe
         {
             auto piece = board[i][j];
             board_tensor[0][i][j][piece.getType()] = 1;
-            board_tensor[0][i][j][8] = piece.getColor();
+            board_tensor[0][i][j][7] = piece.getColor();
         }
     }
     return board_tensor;

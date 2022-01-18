@@ -32,6 +32,8 @@ double NN_MCTS::simulate(std::shared_ptr<Node> root)
 
    double score = this->nn_interface->boardValue(nn_out, current_player);
 
+   // std::cout << "score = " << score << std::endl;
+
    root->setScore(current_player, score);
    root->setScore(1 - current_player, 1 - score);
    return score;
@@ -42,8 +44,8 @@ std::shared_ptr<Node> NN_MCTS::treePolicy(std::shared_ptr<Node> node)
    int currentPlayer = node->getGame()->getCurrentPlayer();
    while (node->getTerminal() == false)
    {
-      node = this->bestChild(node, currentPlayer);
       if (node->getSimulations() == 0) break;
+      node = this->bestChild(node, currentPlayer);
       currentPlayer = 1 - currentPlayer;
    }
    return node;
@@ -69,7 +71,9 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
          expand = false;
       }
       double c = 0.1;
-      double score = (W/N) + c*node->getMoveScores()[i]*sqrt(N_P)/(1+N);
+      double score = (W/(N + 0.00001)) + c*node->getMoveScores()[i]*sqrt(N_P)/(1+N);
+
+      // std::cerr << score << std::endl; 
 
       if(score > bestScore)
       {
@@ -81,10 +85,12 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
    
    if(best_expand)
    {
+      // std::cerr << "expanding" << std::endl;
       return this->expand(node, chosenIndex);
    }
    else
    {
+      // std::cerr << "not expanding? " << bestScore << std::endl;
       return node->getChildren()[chosenIndex];
    }
 }
