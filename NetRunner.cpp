@@ -58,7 +58,8 @@ void NetRunner::run_loop()
          inputs[i] = this->to_process[i];
       }
       torch::Tensor input = torch::cat(inputs);
-      torch::Tensor out = this->net->forward(input);
+      torch::Tensor out = this->net->forward(input.to(*(this->device)));
+      out = out.to(torch::kCPU);
       for (int i = 0; i < batch_size; i++)
       {
          this->output[i] = out.slice(0, i, i + 1);
