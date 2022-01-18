@@ -704,12 +704,13 @@ int Chess::gameStatus(std::vector<std::shared_ptr<Move>> moves)
          pieces[this->board[i][j].getType()]++;
       }
    }
+   int types_count = pieces.size() - 1; // -1 for empty
    // dead positions
-   if (pieces.size() == 1) // king vs king
+   if (types_count == 1) // king vs king
       return GameStatus::DRAW;
-   if (pieces.size() == 2 and pieces[KING] == 2 and pieces[BISHOP] == 1) // king vs king and bishop
+   if (types_count == 2 and pieces[KING] == 2 and pieces[BISHOP] == 1) // king vs king and bishop
       return GameStatus::DRAW;
-   if (pieces.size() == 2 and pieces[KING] == 2 and pieces[KNIGHT] == 1) // king vs king and knight
+   if (types_count == 2 and pieces[KING] == 2 and pieces[KNIGHT] == 1) // king vs king and knight
       return GameStatus::DRAW;
    if (this->positionHistory[this->encodedPosition] > 3) // draw by repetition
       return GameStatus::DRAW;
