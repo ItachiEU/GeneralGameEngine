@@ -51,4 +51,5 @@ public:
    void simulateMove(std::shared_ptr<Move> move);
    int gameStatus(std::vector<std::shared_ptr<Move>> moves);
    std::shared_ptr<Game> clone();
+   const std::vector<std::vector<ChessPiece>> &getBoard();
 };

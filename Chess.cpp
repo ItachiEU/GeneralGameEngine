@@ -838,3 +838,8 @@ void Chess::run(bool debug)
    }
    std::cout << "Game finished" << std::endl;
 }
+
+const std::vector<std::vector<ChessPiece>> &Chess::getBoard()
+{
+   return this->board;
+}
