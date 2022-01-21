@@ -34,6 +34,7 @@ private:
    std::vector<std::shared_ptr<ChessMove>> getRookMoves(int row, int column);
    std::vector<std::shared_ptr<ChessMove>> getKingMoves(int row, int column);
    std::vector<std::shared_ptr<ChessMove>> getQueenMoves(int row, int column);
+   bool isMoveLegal(std::shared_ptr<ChessMove> move);
    bool isUnderCheck(int color);
    bool canPlayerCastle(int color, int side);
    void handleCastling(bool kingside);

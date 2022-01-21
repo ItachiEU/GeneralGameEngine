@@ -1,7 +1,7 @@
 PROG = game-engine
 CC = g++
-CPPFLAGS = -O2 -std=c++17 -Wall -g -fsanitize=address
-LDFLAGS=-lm -fsanitize=address -g
+CPPFLAGS = -O2 -std=c++17 -Wall -g
+LDFLAGS=-lm -g
 OBJS = main.o Move.o ChessMove.o Game.o ChessPiece.o Chess.o Node.o MCTS.o
 
 $(PROG) : $(OBJS)
