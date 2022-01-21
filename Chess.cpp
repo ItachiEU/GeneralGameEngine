@@ -587,6 +587,66 @@ std::shared_ptr<Game> Chess::clone()
 {
    return std::make_shared<Chess>(this);
 }
+
+bool Chess::isMoveLegal(std::shared_ptr<ChessMove> cmove)
+{
+   // positions before potential change
+   auto blackKing = this->blackKing;
+   auto whiteKing = this->whiteKing;
+   ChessPiece taken, origin;
+
+   if (cmove->getPiece() == KING) // update king position
+   {
+      if (cmove->getColor() == BLACK)
+      {
+         this->blackKing = std::make_pair(cmove->getToRow(), cmove->getToCol());
+      }
+      if (cmove->getColor() == WHITE)
+      {
+         this->whiteKing = std::make_pair(cmove->getToRow(), cmove->getToCol());
+      }
+   }
+
+   // remember what the piece was before the move (important for promotion moves)
+   origin.setColor(cmove->getColor());
+   origin.setType(this->board[cmove->getFromRow()][cmove->getFromCol()].getType());
+
+   this->board[cmove->getFromRow()][cmove->getFromCol()].setColor(-1); // clear field where it was
+   this->board[cmove->getFromRow()][cmove->getFromCol()].setType(Piece::EMPTY);
+
+   if (cmove->getTakeRow() != -1 and cmove->getTakeCol() != -1) // clear field it took
+   {
+      // remember what was taken
+      taken.setColor(this->board[cmove->getTakeRow()][cmove->getTakeCol()].getColor());
+      taken.setType(this->board[cmove->getTakeRow()][cmove->getTakeCol()].getType());
+
+      this->board[cmove->getTakeRow()][cmove->getTakeCol()].setColor(-1);
+      this->board[cmove->getTakeRow()][cmove->getTakeCol()].setType(Piece::EMPTY);
+   }
+   this->board[cmove->getToRow()][cmove->getToCol()].setColor(cmove->getColor());
+   this->board[cmove->getToRow()][cmove->getToCol()].setType(cmove->getPiece());
+
+   bool verdict = !this->isUnderCheck(cmove->getColor());
+
+   // undo move here
+   this->whiteKing = whiteKing;
+   this->blackKing = blackKing;
+
+   this->board[cmove->getToRow()][cmove->getToCol()].setColor(-1);
+   this->board[cmove->getToRow()][cmove->getToCol()].setType(Piece::EMPTY);
+
+   if (taken.getColor() != -1)
+   {
+      this->board[cmove->getTakeRow()][cmove->getTakeCol()].setColor(taken.getColor());
+      this->board[cmove->getTakeRow()][cmove->getTakeCol()].setType(taken.getType());
+   }
+
+   this->board[cmove->getFromRow()][cmove->getFromCol()].setColor(origin.getColor()); // clear field where it was
+   this->board[cmove->getFromRow()][cmove->getFromCol()].setType(origin.getType());
+
+   return verdict;
+}
+
 // public
 
 std::vector<std::shared_ptr<Move>> Chess::getPossibleMoves()
@@ -628,9 +688,7 @@ std::vector<std::shared_ptr<Move>> Chess::getPossibleMoves()
    std::vector<std::shared_ptr<Move>> legalMoves;
    for (auto move : potentialMoves)
    {
-      std::shared_ptr<Chess> gameCopy = std::static_pointer_cast<Chess>(this->clone());
-      gameCopy->simulateMove(move);
-      if (!gameCopy->isUnderCheck(currentPlayer))
+      if (this->isMoveLegal(move))
       {
          legalMoves.push_back(move);
       }
