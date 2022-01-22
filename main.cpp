@@ -21,6 +21,9 @@ int main()
       if (player == 0)
       {
          mcts.run();
+         double w = mcts.getRoot()->getScore(player);
+         double n = mcts.getRoot()->getSimulations();
+         std::cout << "board value: " << w / n << std::endl;
          auto best_move = mcts.getBestMove();
          move = best_move.first;
       }

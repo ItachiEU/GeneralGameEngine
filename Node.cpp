@@ -69,5 +69,5 @@ std::shared_ptr<Game> Node::getGame()
 
 std::shared_ptr<Node> Node::getParent()
 {
-   return this->parent;
+   return this->parent.lock();
 }

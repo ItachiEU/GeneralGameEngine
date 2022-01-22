@@ -8,11 +8,11 @@ MCTS::MCTS(std::shared_ptr<Game> game)
 void MCTS::run()
 {
    int player = this->getRoot()->getGame()->getCurrentPlayer();
-   for (int i = 0; i < 10; i++) // placeholder
+   for (int i = 0; i < 100; i++) // placeholder
    {
       std::shared_ptr<Node> node(this->treePolicy(this->getRoot()));
 
-      int result = this->simulate(node);
+      double result = this->simulate(node);
 
       backpropagate(node, player, result);
    }
@@ -113,7 +113,7 @@ std::shared_ptr<Node> MCTS::expand(std::shared_ptr<Node> node)
    gameCopy->simulateMove(node->getPossibleMoves()[node->getLastExpanded()]);
    gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
 
-   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
+   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy, node);
    node->getChildren()[node->getLastExpanded()] = child;
    if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
       child->setTerminal(true);
