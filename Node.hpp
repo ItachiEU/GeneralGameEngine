@@ -11,7 +11,7 @@ private:
    int lastExpanded;
    bool terminal;
    std::shared_ptr<Game> game;
-   std::shared_ptr<Node> parent;
+   std::weak_ptr<Node> parent; // This can't be a shared pointer
    std::vector<std::shared_ptr<Move>> possibleMoves;
    std::unordered_map<int, std::shared_ptr<Node>> children;
 
