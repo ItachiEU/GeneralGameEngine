@@ -58,7 +58,7 @@ torch::Tensor ChessNet::forward(torch::Tensor x)
     y = res5->forward(y);
     y = res6->forward(y);
     y = res7->forward(y);
-    auto move_values = out_conv->forward(y).flatten(1,-1);
+    auto move_values = out_conv->forward(y).permute({0,2,3,1}).flatten(1,-1);
     auto scores = out_linear->forward(y.mean({2,3}));
     return torch::cat({move_values, scores}, 1);
 }
@@ -72,12 +72,11 @@ torch::Tensor ChessNet::loss(torch::Tensor input, torch::Tensor moves, torch::Te
     auto values = nn_out.slice(1, 8*8*8*8 + 4, 8*8*8*8 + 5);
 
     auto gathered_scores = torch::gather(board_scores, 1, moves) + move_masks;
-    auto probs = torch::softmax(board_scores, 1);
+    auto probs = torch::log(torch::softmax(gathered_scores, 1)+1e-7);
 
-    auto move_loss = torch::mse_loss(probs, move_scores);
+    auto move_loss = probs.unsqueeze(-2).matmul(move_scores.unsqueeze(-1));
     auto value_loss = torch::mse_loss(torch::sigmoid(values), result);
-
-    return (move_loss + value_loss).sum();
+    return (-move_loss.mean() + value_loss).sum();
 }
 
 torch::Tensor ChessNNInterface::getNNInput(std::shared_ptr<Game> game, int player)
@@ -90,8 +89,8 @@ torch::Tensor ChessNNInterface::getNNInput(std::shared_ptr<Game> game, int playe
         for (int j = 0; j < 8; j++)
         {
             auto piece = board[i][j];
-            board_tensor[0][i][j][piece.getType()] = 1;
-            board_tensor[0][i][j][7] = piece.getColor();
+            board_tensor[0][piece.getType()][i][j] = 1;
+            board_tensor[0][7][i][j] = piece.getColor();
         }
     }
     return board_tensor;
@@ -136,11 +135,12 @@ double ChessNNInterface::boardValue(torch::Tensor nn_out, int player)
 
 torch::Tensor ChessNNInterface::movesRepr(std::vector<std::shared_ptr<Move>> &moves)
 {
-    torch::Tensor moves_tensor = torch::zeros({(int)moves.size(), 1}, torch::kInt64);
-    for (int i = 0; i < moves.size(); i++)
+    torch::Tensor moves_tensor = torch::zeros({1,(int)moves.size()}, torch::kInt64);
+    int s = moves.size();
+    for (int i = 0; i < s; i++)
     {
         auto move = std::static_pointer_cast<ChessMove>(moves[i]);
-        moves_tensor[i][0] = move->getFromRow() * 256 + move->getFromCol()*64 + move->getToRow()*8 + move->getToCol();
+        moves_tensor[0][i] = move->getFromRow() * 256 + move->getFromCol()*64 + move->getToRow()*8 + move->getToCol();
     }
     return moves_tensor;
 }
