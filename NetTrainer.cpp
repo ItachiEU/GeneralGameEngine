@@ -1,6 +1,7 @@
 #include "NetTrainer.hpp"
 #include <random>
 #include "Chess.hpp"
+#include <fstream>
 
 NetTrainer::NetTrainer(
     std::shared_ptr<Game> game,
@@ -26,27 +27,31 @@ void NetTrainer::train(int target_samples, int train_threads, int test_threads) 
     for (int i = 0; i < train_threads; i++) {
         this->threads[i] = std::make_shared<std::thread>(&NetTrainer::dataGenLoop, this);
     }
-    // for (int i = train_threads; i < train_threads + test_threads; i++) {
-    //     this->threads[i] = std::make_shared<std::thread>(&NetTrainer::testLoop, this);
-    // }
+    for (int i = train_threads; i < train_threads + test_threads; i++) {
+        this->threads[i] = std::make_shared<std::thread>(&NetTrainer::testLoop, this);
+    }
 
     while(1) {
         auto lock = std::unique_lock<std::mutex>(this->data_mutex);
         this->data_cv.wait(lock, [&]() {
-            return (int)this->data.size() >= this->train_batch_size;
+            return (int)this->data.size() >= this->target_samples;
         });
 
-        this->trainEpoch();
+        //reusing data a bit
+        for(int i = 0; i<2; i++) {
+            this->trainEpoch();
+        }
 
         this->data.clear();
     }
 }
 
 void NetTrainer::dataGenLoop() {
+    torch::set_num_threads(1);
     torch::NoGradGuard no_grad;
     while(1) {
         
-        std::cout << "starting next game" << std::endl;
+        // std::cout << "starting next game" << std::endl;
 
         NN_MCTS mcts(this->baseGame, this->runner, this->interface);
 
@@ -56,9 +61,10 @@ void NetTrainer::dataGenLoop() {
         mcts.setRandomness(true);
 
         while (!mcts.getRoot()->getTerminal()){
+            // std::cout << "moves made: " << moves_made << std::endl;
             if(moves_made > 25)
                 mcts.setRandomness(false);
-            mcts.run(3);
+            mcts.run(400);
             
             auto game = mcts.getRoot()->getGame();
             auto input = interface->getNNInput(game, game->getCurrentPlayer());
@@ -89,17 +95,28 @@ void NetTrainer::dataGenLoop() {
             if(moves_made == 500) break;
         }
 
-        double result = mcts.getRoot()->getScore(0);
+        int game_result = mcts.getRoot()->getGame()->gameStatus(mcts.getRoot()->getPossibleMoves());
+        
+        double result = 0;
+
+        if(game_result == 1 || game_result == 2){
+            result = 0.5;
+        } else {
+            result = mcts.getRoot()->getGame()->getCurrentPlayer();
+        }
+
         if(moves_made == 500) {
             result = 0.5;
         }
 
         auto lock = std::unique_lock<std::mutex>(this->data_mutex);
         for (auto& s : samples) {
-            s.result = torch::from_blob(&result, {1, 1}, torch::kFloat).clone();
+            float res = result;
+            s.result = torch::from_blob(&res, {1, 1}, torch::kFloat).clone();
             this->data.push_back(s);
         }
 
+        std::cout << "result " << result << " data size: " << this->data.size() << std::endl;
         this->data_cv.notify_all();
         lock.unlock();
     }
@@ -137,11 +154,6 @@ void NetTrainer::trainEpoch(){
             int current_size = moves[j].size(1);
             auto zero_mask = torch::zeros({1, current_size}, torch::kFloat);
             auto full_mask = torch::ones({1, longest - current_size}, torch::kFloat)*-INFINITY;
-            
-            // std:: cout << "longest: " << longest << std::endl;
-            // std:: cout << "current: " << current_size << std::endl;
-            // std:: cout << "mask: " << zero_mask.sizes << std::endl;
-            // std:: cout << "mask: " << zero_mask.sizes << std::endl;
 
             auto mask = torch::cat({zero_mask, full_mask}, 1);
             
@@ -151,17 +163,10 @@ void NetTrainer::trainEpoch(){
             move_scores[j] = torch::cat({move_scores[j], filler.to(torch::kFloat32)}, 1);
         }
         auto boards_tensor = torch::cat(boards, 0).to(*(this->device));
-        auto moves_tensor = torch::cat(moves, 0);
-        auto move_scores_tensor = torch::cat(move_scores, 0);
-        auto results_tensor = torch::cat(results, 0);
-        auto masks_tensor = torch::cat(masks, 0);
-
-        // std::cout << boards_tensor.sizes() << std::endl;
-        // std::cout << moves_tensor.sizes() << std::endl;
-        // std::cout << move_scores_tensor.sizes() << std::endl;
-        // std::cout << results_tensor.sizes() << std::endl;
-        // std::cout << masks_tensor.sizes() << std::endl;
-        
+        auto moves_tensor = torch::cat(moves, 0).to(*(this->device));
+        auto move_scores_tensor = torch::cat(move_scores, 0).to(*(this->device));
+        auto results_tensor = torch::cat(results, 0).to(*(this->device));
+        auto masks_tensor = torch::cat(masks, 0).to(*(this->device));
 
         this->optimizer->zero_grad();
         auto loss = this->net->loss(boards_tensor, moves_tensor, masks_tensor, move_scores_tensor, results_tensor);
@@ -169,11 +174,17 @@ void NetTrainer::trainEpoch(){
         iters++;
         loss.backward();
         this->optimizer->step();
+
     }
+    std::ofstream logfile;
+    logfile.open("losslog.txt", std::ios_base::app);
+    logfile << avg_loss/iters << std::endl;
+    logfile.close();
     std::cout << "avg loss: " << avg_loss/iters << std::endl;
 }
 
 void NetTrainer::testLoop() {
+    torch::set_num_threads(1);
     while(1) {
         std::shared_ptr<Game> real_game = this->baseGame->clone();
         NN_MCTS mcts(this->baseGame, this->runner, this->interface);
@@ -188,7 +199,7 @@ void NetTrainer::testLoop() {
 
             if (player == 0)
             {
-                mcts.run();
+                mcts.run(400);
                 double w = mcts.getRoot()->getScore(player);
                 double n = mcts.getRoot()->getSimulations();
                 std::cout << "board value: " << w / n << std::endl;
@@ -208,28 +219,38 @@ void NetTrainer::testLoop() {
             moves = real_game->getPossibleMoves();
         }
 
+        std::ofstream logfile;
+        logfile.open("winlog.txt", std::ios_base::app);
+        
+
         switch (real_game->gameStatus(moves))
         {
         case GameStatus::DRAW:
             std::cout << "Draw" << std::endl;
+            logfile << 0.5 << std::endl;
             break;
         case GameStatus::STALE_MATE:
             std::cout << "Stalemate" << std::endl;
+            logfile << 0.5 << std::endl;
             break;
         case GameStatus::CHECK_MATE:
             std::cout << "Checkmate, ";
             if (!player)
             {
                 std::cout << "Black wins" << std::endl;
+                logfile << 0.0 << std::endl;
             }
             else
             {
                 std::cout << "White wins" << std::endl;
+                logfile << 1.0 << std::endl;
             }
             break;
         default:
             break;
         }
+
+        logfile.close();
     }
 }
 

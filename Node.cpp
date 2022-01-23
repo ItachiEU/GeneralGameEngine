@@ -9,7 +9,7 @@ Node::Node(std::vector<std::shared_ptr<Move>> moves, std::shared_ptr<Game> game,
    this->parent = ancestor;
    this->simulations = 0;
    this->lastExpanded = -1;
-   this->terminal = false;
+   this->terminal = game->gameStatus(moves) != -1;
 }
 
 int Node::getLastExpanded()
