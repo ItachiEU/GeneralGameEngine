@@ -97,6 +97,36 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
    }
 }
 
+std::pair<std::shared_ptr<Move>, std::shared_ptr<Node>> NN_MCTS::getBestMove(){
+   if(!this->randomness){
+      int best_cnt = -1;
+      std::shared_ptr<Node> chosenChild = nullptr;
+      std::shared_ptr<Move> chosenMove = nullptr;
+      for (auto son : root->getChildren())
+      {
+         if(son.second->getSimulations() > best_cnt)
+         {
+            chosenChild = son.second;
+            chosenMove = root->getPossibleMoves()[son.first];
+            best_cnt = son.second->getSimulations();
+         }
+      }
+      return make_pair(chosenMove, chosenChild);
+   } else {
+      int acc = 0;
+      int random_pos = rand() % (root->getSimulations() - 1);
+      for (auto son : root->getChildren())
+      {
+         acc += son.second->getSimulations();
+         if(acc >= random_pos)
+         {
+            return make_pair(root->getPossibleMoves()[son.first], son.second);
+         }
+      }
+      assert (false && "No child found");
+   }
+}
+
 std::shared_ptr<Node> NN_MCTS::expand(std::shared_ptr<Node> node, int move_index)
 {
    auto gameCopy = node->getGame()->clone();
@@ -111,3 +141,9 @@ std::shared_ptr<Node> NN_MCTS::expand(std::shared_ptr<Node> node, int move_index
 
    return child;
 }
+
+void NN_MCTS::setRandomness(bool randomness)
+{
+   this->randomness = randomness;
+}
+
