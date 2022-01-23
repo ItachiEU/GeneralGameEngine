@@ -4,10 +4,11 @@ NN_MCTS::NN_MCTS(std::shared_ptr<Game> game, std::shared_ptr<NetRunner> runner, 
 {
    this->runner = runner;
    this->nn_interface = interface;
+   auto g = this->root->getGame();
 
-   auto nn_input = this->nn_interface->getNNInput(game, game->getCurrentPlayer());
+   auto nn_input = this->nn_interface->getNNInput(g, g->getCurrentPlayer());
    auto nn_out = this->runner->request_run(nn_input);
-   auto moves = game->getPossibleMoves();
+   auto moves = this->root->getPossibleMoves();
    auto move_scores = this->nn_interface->moveScores(nn_out, moves);
 
    getRoot()->setMoveScores(move_scores);
@@ -58,6 +59,7 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
    bool best_expand = false;
 
    int s = node->getPossibleMoves().size();
+   assert((int)node->getMoveScores().size() == s);
    double N_P = node->getSimulations();
    for (int i = 0; i<s; i++)
    {

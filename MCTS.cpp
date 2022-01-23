@@ -2,13 +2,14 @@
 
 MCTS::MCTS(std::shared_ptr<Game> game)
 {
-   this->root = std::make_shared<Node>(game->getPossibleMoves(), game);
+   auto g = game->clone(); // required because of multithreading
+   this->root = std::make_shared<Node>(g->getPossibleMoves(), g);
 }
 
 void MCTS::run()
 {
    int player = this->getRoot()->getGame()->getCurrentPlayer();
-   for (int i = 0; i < 100; i++) // placeholder
+   for (int i = 0; i < 3; i++) // placeholder
    {
       std::shared_ptr<Node> node(this->treePolicy(this->getRoot()));
 
