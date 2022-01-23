@@ -102,7 +102,7 @@ std::shared_ptr<Node> NN_MCTS::expand(std::shared_ptr<Node> node, int move_index
    gameCopy->simulateMove(node->getPossibleMoves()[move_index]);
    gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
 
-   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy);
+   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy, node);
    node->getChildren()[move_index] = child;
    if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
       child->setTerminal(true);

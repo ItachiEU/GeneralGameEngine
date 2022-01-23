@@ -30,6 +30,7 @@ private:
 public:
    ChessNet(int channels, int kernel_size);
    torch::Tensor forward(torch::Tensor x);
+   torch::Tensor loss(torch::Tensor input, torch::Tensor moves, torch::Tensor masks, torch::Tensor move_scores, torch::Tensor result);
 };
 
 class ChessNNInterface : public NN_Interface
@@ -38,4 +39,5 @@ public:
    torch::Tensor getNNInput(std::shared_ptr<Game> game, int player);
    std::vector<double> moveScores(torch::Tensor nn_out, std::vector<std::shared_ptr<Move>> &moves);
    double boardValue(torch::Tensor nn_out, int player);
+   torch::Tensor movesRepr(std::vector<std::shared_ptr<Move>> &moves);
 };

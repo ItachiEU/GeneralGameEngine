@@ -8,6 +8,7 @@ public:
    virtual torch::Tensor getNNInput(std::shared_ptr<Game> game, int player) = 0;
    virtual std::vector<double> moveScores(torch::Tensor nn_out, std::vector<std::shared_ptr<Move>> &moves) = 0;
    virtual double boardValue(torch::Tensor nn_out, int player) = 0;
+   virtual torch::Tensor movesRepr(std::vector<std::shared_ptr<Move>> &moves) = 0;
 };
 
 class NN_MCTS : public MCTS
