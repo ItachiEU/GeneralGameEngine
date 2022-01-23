@@ -9,6 +9,13 @@ class Net : public torch::nn::Module
 {
 public:
    virtual torch::Tensor forward(torch::Tensor input) = 0;
+   virtual torch::Tensor loss(
+      torch::Tensor input, 
+      torch::Tensor moves, 
+      torch::Tensor masks,
+      torch::Tensor move_scores, 
+      torch::Tensor result
+   ) = 0;
 };
 
 class NetRunner

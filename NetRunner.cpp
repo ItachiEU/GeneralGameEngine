@@ -23,10 +23,8 @@ torch::Tensor NetRunner::request_run(torch::Tensor input)
    this->ready_list.push_back(&ready);
    this->runner_cv.notify_one();
 
-   while (!ready)
-   {
-      cv.wait(lck);
-   }
+   cv.wait(lck, [&]{return ready;});
+
    return this->output[request_pos];
 }
 
@@ -39,18 +37,14 @@ void NetRunner::shutdown()
 
 void NetRunner::run_loop()
 {
+   torch::NoGradGuard no_grad;
    while (!this->done)
    {
       std::unique_lock<std::mutex> lck(this->mtx);
-      this->runner_cv.wait(lck); // wait for a request
+      this->runner_cv.wait(lck, [this]{return this->done || (int)this->to_process.size() >= this->batch_size;}); // wait for a request
       if (this->done)
       {
          break;
-      }
-      int batch_size = this->to_process.size();
-      if (batch_size < this->batch_size)
-      {
-         continue;
       }
       std::vector<torch::Tensor> inputs(batch_size);
       for (int i = 0; i < batch_size; i++)

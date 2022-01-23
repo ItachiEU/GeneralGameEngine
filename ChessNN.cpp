@@ -63,6 +63,23 @@ torch::Tensor ChessNet::forward(torch::Tensor x)
     return torch::cat({move_values, scores}, 1);
 }
 
+torch::Tensor ChessNet::loss(torch::Tensor input, torch::Tensor moves, torch::Tensor move_masks, torch::Tensor move_scores, torch::Tensor result){
+
+    auto nn_out = this->forward(input);
+
+    auto board_scores = nn_out.slice(1, 0, 8*8*8*8);
+    // auto promote_scores = nn_out.slice(1, 8*8*8*8, 8*8*8*8 + 4);
+    auto values = nn_out.slice(1, 8*8*8*8 + 4, 8*8*8*8 + 5);
+
+    auto gathered_scores = torch::gather(board_scores, 1, moves) + move_masks;
+    auto probs = torch::softmax(board_scores, 1);
+
+    auto move_loss = torch::mse_loss(probs, move_scores);
+    auto value_loss = torch::mse_loss(torch::sigmoid(values), result);
+
+    return (move_loss + value_loss).sum();
+}
+
 torch::Tensor ChessNNInterface::getNNInput(std::shared_ptr<Game> game, int player)
 {
     std::shared_ptr<Chess> chess_game = std::static_pointer_cast<Chess>(game);
@@ -109,5 +126,21 @@ std::vector<double> ChessNNInterface::moveScores(torch::Tensor nn_out, std::vect
 double ChessNNInterface::boardValue(torch::Tensor nn_out, int player)
 {
     // network always predicts the value of the white player
-    return (player - torch::sigmoid(nn_out[0][8*8*8*8 + 4]).item().toDouble());
+    double value = torch::sigmoid(nn_out[0][8*8*8*8 + 4]).item().toDouble();
+    if (player == 1)
+    {
+        value = 1 - value;
+    }
+    return value;
+}
+
+torch::Tensor ChessNNInterface::movesRepr(std::vector<std::shared_ptr<Move>> &moves)
+{
+    torch::Tensor moves_tensor = torch::zeros({(int)moves.size(), 1}, torch::kInt64);
+    for (int i = 0; i < moves.size(); i++)
+    {
+        auto move = std::static_pointer_cast<ChessMove>(moves[i]);
+        moves_tensor[i][0] = move->getFromRow() * 256 + move->getFromCol()*64 + move->getToRow()*8 + move->getToCol();
+    }
+    return moves_tensor;
 }
