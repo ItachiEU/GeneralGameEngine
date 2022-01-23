@@ -4,8 +4,8 @@ project(game-engine)
 include_directories(".")
 file(GLOB SOURCES "*.cpp")
 
-add_compile_options(-Wall -O2 -std=c++17 -g -fsanitize=address -pthread)
-add_link_options(-lm -fsanitize=address -g)
+add_compile_options(-Wall -O2 -std=c++17 -g -pthread)
+add_link_options(-lm -g)
 
 find_package(Threads REQUIRED)
 find_package(Torch REQUIRED)

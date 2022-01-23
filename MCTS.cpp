@@ -8,12 +8,16 @@ MCTS::MCTS(std::shared_ptr<Game> game)
 
 void MCTS::run(int simulations)
 {
-   int player = this->getRoot()->getGame()->getCurrentPlayer();
+   
    for (int i = 0; i < simulations; i++) // placeholder
    {
       std::shared_ptr<Node> node(this->treePolicy(this->getRoot()));
 
       double result = this->simulate(node);
+
+      int player = node->getGame()->getCurrentPlayer();
+
+      assert ((result >= 0.0) && (result <= 1.0) && "simulate returned nonsense result");
 
       backpropagate(node, player, result);
    }

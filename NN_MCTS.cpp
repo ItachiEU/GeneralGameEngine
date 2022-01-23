@@ -21,7 +21,7 @@ double NN_MCTS::simulate(std::shared_ptr<Node> root)
 
    if (root->getTerminal())
    {
-      return root->getScore(current_player);
+      return root->getScore(current_player) / ((double)root->getSimulations()+1); 
    }
 
    auto nn_input = this->nn_interface->getNNInput(game, current_player);
@@ -33,6 +33,7 @@ double NN_MCTS::simulate(std::shared_ptr<Node> root)
 
    double score = this->nn_interface->boardValue(nn_out, current_player);
 
+   assert (score >= -0.01 && "board score < 0");
    // std::cout << "score = " << score << std::endl;
 
    root->setScore(current_player, score);
@@ -42,11 +43,13 @@ double NN_MCTS::simulate(std::shared_ptr<Node> root)
 
 std::shared_ptr<Node> NN_MCTS::treePolicy(std::shared_ptr<Node> node)
 {
+   assert (node != nullptr && "tree policy called with nullptr node");
    int currentPlayer = node->getGame()->getCurrentPlayer();
    while (node->getTerminal() == false)
    {
       if (node->getSimulations() == 0) break;
       node = this->bestChild(node, currentPlayer);
+      assert (node != nullptr && "bestChild returned nullptr");
       currentPlayer = 1 - currentPlayer;
    }
    return node;
@@ -54,7 +57,7 @@ std::shared_ptr<Node> NN_MCTS::treePolicy(std::shared_ptr<Node> node)
 
 // Since expansions are also guided by the neural network, bestChild is now responsible for expanding
 std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int currentPlayer){
-   double bestScore = -1.0;
+   double bestScore = -1.1;
    int chosenIndex = -1;
    bool best_expand = false;
 
@@ -72,10 +75,12 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
          N = node->getChildren()[i]->getSimulations();
          expand = false;
       }
-      double c = 0.1;
-      double score = (W/(N + 0.00001)) + c*node->getMoveScores()[i]*sqrt(N_P)/(1+N);
+      double c = 1.0;
+      double score = ((2*W-N)/(N + 0.00001)) + c*node->getMoveScores()[i]*sqrt(N_P)/(1+N);
 
-      // std::cerr << score << std::endl; 
+      if(((2*W-N)/(N + 0.00001))  <= -1.01){
+         std::cerr << "W = " << W << " N = " << N << " N_P = " << N_P << " score = " << score << std::endl;
+      }
 
       if(score > bestScore)
       {
@@ -85,6 +90,8 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
       }
    }
    
+   assert (chosenIndex != -1);
+
    if(best_expand)
    {
       // std::cerr << "expanding" << std::endl;
@@ -133,14 +140,27 @@ std::shared_ptr<Node> NN_MCTS::expand(std::shared_ptr<Node> node, int move_index
 
    gameCopy->simulateMove(node->getPossibleMoves()[move_index]);
    gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
-
-   auto child = std::make_shared<Node>(gameCopy->getPossibleMoves(), gameCopy, node);
+   auto possibleMoves = gameCopy->getPossibleMoves();
+   auto child = std::make_shared<Node>(possibleMoves, gameCopy, node);
    node->getChildren()[move_index] = child;
-   if (child->getGame()->gameStatus(gameCopy->getPossibleMoves()) != -1)
+   int game_result = child->getGame()->gameStatus(possibleMoves);
+   if (game_result != -1){
       child->setTerminal(true);
+      if(game_result == 1 || game_result == 2)
+      {
+         child->setScore(0, 0.5);
+         child->setScore(1, 0.5);
+      }
+      else
+      {
+         child->setScore(child->getGame()->getCurrentPlayer(), 0);
+         child->setScore(1-child->getGame()->getCurrentPlayer(), 1);
+      }
+   }
 
    return child;
 }
+
 
 void NN_MCTS::setRandomness(bool randomness)
 {
