@@ -21,7 +21,7 @@ int main()
 
    auto trainer = std::make_shared<NetTrainer>(game, interface, net, device, opt, 1, 10);
 
-   trainer->train(2, 1, 1);
+   trainer->train(2, 2, 1);
 
    return 0;
 }

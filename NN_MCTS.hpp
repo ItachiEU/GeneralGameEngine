@@ -13,6 +13,8 @@ public:
 
 class NN_MCTS : public MCTS
 {
+private:
+   bool randomness = false;
 protected:
    std::shared_ptr<NetRunner> runner;
    std::shared_ptr<NN_Interface> nn_interface;
@@ -23,4 +25,6 @@ protected:
 
 public:
    NN_MCTS(std::shared_ptr<Game> game, std::shared_ptr<NetRunner> runner, std::shared_ptr<NN_Interface> interface);
+   void setRandomness(bool randomness);
+   std::pair<std::shared_ptr<Move>, std::shared_ptr<Node>> getBestMove();
 };

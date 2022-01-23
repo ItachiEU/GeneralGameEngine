@@ -53,9 +53,12 @@ void NetTrainer::dataGenLoop() {
         std::vector<sample> samples;
 
         int moves_made = 0;
+        mcts.setRandomness(true);
 
         while (!mcts.getRoot()->getTerminal()){
-            mcts.run();
+            if(moves_made > 25)
+                mcts.setRandomness(false);
+            mcts.run(3);
             
             auto game = mcts.getRoot()->getGame();
             auto input = interface->getNNInput(game, game->getCurrentPlayer());

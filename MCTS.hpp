@@ -14,8 +14,8 @@ protected:
 
 public:
    MCTS(std::shared_ptr<Game> game);
-   void run();
-   std::pair<std::shared_ptr<Move>, std::shared_ptr<Node>> getBestMove();
+   void run(int simulations=10);
+   virtual std::pair<std::shared_ptr<Move>, std::shared_ptr<Node>> getBestMove();
    void doMove(std::shared_ptr<Move> move);
    std::shared_ptr<Node> getRoot();
    void setRoot(std::shared_ptr<Node> node);
