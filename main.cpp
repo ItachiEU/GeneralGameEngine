@@ -8,7 +8,6 @@ int main()
 {
    srand(time(NULL));
 
-
    std::shared_ptr<Game> real_game = std::make_shared<Chess>();
 
    std::shared_ptr<Game> game = std::make_shared<Chess>();

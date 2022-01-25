@@ -108,6 +108,7 @@ std::vector<double> ChessNNInterface::moveScores(torch::Tensor nn_out, std::vect
     {
         auto move = std::static_pointer_cast<ChessMove>(moves[i]);
         scores[i] = board_scores[move->getFromRow()][move->getFromCol()][move->getToRow()][move->getToCol()];
+        // std::cout << scores[i].item().toDouble() << " " << move->getFromRow() << move->getFromCol() << move->getToRow() << move->getToCol() << std::endl;
     }
 
     scores = torch::softmax(scores, 0);
