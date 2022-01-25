@@ -29,6 +29,7 @@ private:
     std::condition_variable data_cv;
     int target_samples;
     int train_batch_size;
+    int new_samples = 0;
     void trainEpoch();
     
 

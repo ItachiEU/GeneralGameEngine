@@ -26,7 +26,7 @@ double NN_MCTS::simulate(std::shared_ptr<Node> root)
 
    auto nn_input = this->nn_interface->getNNInput(game, current_player);
    auto nn_out = this->runner->request_run(nn_input);
-   auto moves = game->getPossibleMoves();
+   auto moves = root->getPossibleMoves();
    auto move_scores = this->nn_interface->moveScores(nn_out, moves);
 
    root->setMoveScores(move_scores);
@@ -90,6 +90,14 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
       }
    }
    
+   // std::cout << "bestScore = " << bestScore << std::endl;
+   // auto move = node->getPossibleMoves()[chosenIndex];
+   // auto cmove = std::static_pointer_cast<ChessMove>(move);
+   // std::cout << cmove->getFromRow() << " " << cmove->getFromCol() << " " << cmove->getToRow() << " " << cmove->getToCol() << std::endl;
+   // auto game = node->getGame()->clone();
+   // game->simulateMove(move);
+   // std::cout << game->printBoard() << std::endl;
+
    assert (chosenIndex != -1);
 
    if(best_expand)

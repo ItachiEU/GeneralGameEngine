@@ -34,15 +34,15 @@ void NetTrainer::train(int target_samples, int train_threads, int test_threads) 
     while(1) {
         auto lock = std::unique_lock<std::mutex>(this->data_mutex);
         this->data_cv.wait(lock, [&]() {
-            return (int)this->data.size() >= this->target_samples;
+            return this->new_samples >= this->target_samples;
         });
 
         //reusing data a bit
-        for(int i = 0; i<2; i++) {
-            this->trainEpoch();
-        }
+        this->trainEpoch();
+        new_samples = 0;
 
-        this->data.clear();
+        if(this->data.size() >= 100000)
+            this->data.erase(this->data.begin(), this->data.end() - 100000);
     }
 }
 
@@ -64,7 +64,7 @@ void NetTrainer::dataGenLoop() {
             // std::cout << "moves made: " << moves_made << std::endl;
             if(moves_made > 25)
                 mcts.setRandomness(false);
-            mcts.run(400);
+            mcts.run(500);
             
             auto game = mcts.getRoot()->getGame();
             auto input = interface->getNNInput(game, game->getCurrentPlayer());
@@ -115,6 +115,7 @@ void NetTrainer::dataGenLoop() {
             s.result = torch::from_blob(&res, {1, 1}, torch::kFloat).clone();
             this->data.push_back(s);
         }
+        this->new_samples += samples.size();
 
         std::cout << "result " << result << " data size: " << this->data.size() << std::endl;
         this->data_cv.notify_all();
@@ -188,35 +189,51 @@ void NetTrainer::testLoop() {
     while(1) {
         std::shared_ptr<Game> real_game = this->baseGame->clone();
         NN_MCTS mcts(this->baseGame, this->runner, this->interface);
+        MCTS other(this->baseGame);
 
         auto moves = real_game->getPossibleMoves();
 
         int player = 0;
-
+        int moves_made = 0;
         while (real_game->gameStatus(moves) == -1)
         {
             std::shared_ptr<Move> move = nullptr;
 
             if (player == 0)
             {
-                mcts.run(400);
+                mcts.run(500);
+                // auto scores = mcts.getRoot()->getMoveScores();
+                // std::sort(scores.begin(), scores.end());
+                // for(int i = 0; i<scores.size(); i++){
+                //     std::cout << scores[i] << " ";
+                // }
+                // std::cout << std::endl;
+
                 double w = mcts.getRoot()->getScore(player);
                 double n = mcts.getRoot()->getSimulations();
-                std::cout << "board value: " << w / n << std::endl;
+                std::cout << "neural board value: " << w / n << std::endl;
                 auto best_move = mcts.getBestMove();
                 move = best_move.first;
             }
             else
-            {
-                move = real_game->getPossibleMoves()[rand() % real_game->getPossibleMoves().size()];
+            {   
+                other.run(1000);
+                double w = other.getRoot()->getScore(player);
+                double n = other.getRoot()->getSimulations();
+                std::cout << "random board value: " << w / n << std::endl;
+                auto best_move = other.getBestMove();
+                move = best_move.first;
             }
 
+            other.doMove(move);
             mcts.doMove(move);
             real_game->simulateMove(move);
             player = 1 - player;
             real_game->setCurrentPlayer(player);
             std::cout << real_game->printBoard() << std::endl;
             moves = real_game->getPossibleMoves();
+            moves_made++;
+            if(moves_made == 500) break;
         }
 
         std::ofstream logfile;
@@ -247,6 +264,8 @@ void NetTrainer::testLoop() {
             }
             break;
         default:
+            std::cout << "Timeout" << std::endl;
+            logfile << 0.5 << std::endl;
             break;
         }
 
