@@ -9,6 +9,7 @@ private:
    std::vector<double> score;
    int simulations;
    int lastExpanded;
+   double trueGameResult;
    bool terminal;
    std::shared_ptr<Game> game;
    std::weak_ptr<Node> parent; // This can't be a shared pointer
@@ -32,4 +33,6 @@ public:
    std::shared_ptr<Node> getParent();
    const std::vector<double> &getMoveScores();
    void setMoveScores(const std::vector<double> &moveScores);
+   double getTrueGameResult();
+   void setTrueGameResult(double trueGameResult);
 };

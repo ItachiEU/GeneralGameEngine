@@ -81,3 +81,13 @@ void Node::setMoveScores(const std::vector<double> &moveScores)
 {
    this->moveScores = moveScores;
 }
+
+double Node::getTrueGameResult()
+{
+   return this->trueGameResult;
+}
+
+void Node::setTrueGameResult(double trueGameResult)
+{
+   this->trueGameResult = trueGameResult;
+}

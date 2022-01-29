@@ -16,7 +16,7 @@ ResidualLayer::ResidualLayer(int in_channels, int kernel_size) : torch::nn::Modu
 }
 
 torch::Tensor ResidualLayer::forward(torch::Tensor x)
-{
+{   
     torch::Tensor y = torch::relu(conv1->forward(x));
     y = conv2->forward(y);
     y = norm->forward(y + x);
@@ -25,8 +25,8 @@ torch::Tensor ResidualLayer::forward(torch::Tensor x)
 
 ChessNet::ChessNet(int channels, int kernel_size) : Net()
 {   
-    // each position has 7 piece options (one-hot) + 1 for piece color
-    auto in_options = torch::nn::Conv2dOptions(8, channels, 1) 
+    // each position has 6*2 possible pieces
+    auto in_options = torch::nn::Conv2dOptions(12, channels, 1) 
         .stride(1)
         .padding(0)
         .bias(true);
@@ -44,8 +44,10 @@ ChessNet::ChessNet(int channels, int kernel_size) : Net()
     res5 = register_module("res5", std::make_shared<ResidualLayer>(channels, kernel_size));
     res6 = register_module("res6", std::make_shared<ResidualLayer>(channels, kernel_size));
     res7 = register_module("res7", std::make_shared<ResidualLayer>(channels, kernel_size));
-    out_conv = register_module("out_conv", torch::nn::Conv2d(out_options)); // 64 x 8 x 8 ~ start_pos x end_pos
-    out_linear = register_module("out_linear", torch::nn::Linear(channels, 6)); // 4 promote options + 1 for value
+    out_conv_from = register_module("out_conv_from", torch::nn::Conv2d(out_options));
+    // out_conv_to = register_module("out_conv_to", torch::nn::Conv2d(out_options));
+    out_lin_1 = register_module("out_lin_1", torch::nn::Linear(channels*8*8, 256));
+    out_lin_2 = register_module("out_lin_2", torch::nn::Linear(256, 6)); // 4 promote options + 1 for value
 }
 
 torch::Tensor ChessNet::forward(torch::Tensor x)
@@ -58,9 +60,16 @@ torch::Tensor ChessNet::forward(torch::Tensor x)
     y = res5->forward(y);
     y = res6->forward(y);
     y = res7->forward(y);
-    auto move_values = out_conv->forward(y).permute({0,2,3,1}).flatten(1,-1);
-    auto scores = out_linear->forward(y.mean({2,3}));
-    return torch::cat({move_values, scores}, 1);
+    auto from_values = out_conv_from->forward(y).permute({0,2,3,1}).reshape({-1, 64*64});
+    // auto to_values = out_conv_to->forward(y).reshape({-1, 32, 64}).transpose(1,2);
+
+    // auto targets = to_values.matmul(from_values)/sqrt(32);
+    // std::cout << targets.sizes() << std::endl;
+    // auto board_values = targets.reshape({-1, 64*64});
+
+    auto ylin = out_lin_1->forward(y.reshape({-1, 8*8*y.size(1)}));
+    auto scores = out_lin_2->forward(ylin);
+    return torch::cat({from_values, scores}, 1);
 }
 
 torch::Tensor ChessNet::loss(torch::Tensor input, torch::Tensor moves, torch::Tensor move_masks, torch::Tensor move_scores, torch::Tensor result){
@@ -74,8 +83,13 @@ torch::Tensor ChessNet::loss(torch::Tensor input, torch::Tensor moves, torch::Te
     auto gathered_scores = torch::gather(board_scores, 1, moves) + move_masks;
     auto probs = torch::log(torch::softmax(gathered_scores, 1)+1e-7);
 
+    // std :: cout << probs.sizes() << std::endl;
+    // std :: cout << move_scores << std::endl;
+
     auto move_loss = probs.unsqueeze(-2).matmul(move_scores.unsqueeze(-1));
-    auto value_loss = torch::mse_loss(torch::sigmoid(values), result);
+    // std :: cout << move_loss.sizes() << std::endl;
+    // std :: cout << move_loss << std::endl;
+    auto value_loss = torch::binary_cross_entropy(torch::sigmoid(values), result);
     return (-move_loss.mean() + value_loss).sum();
 }
 
@@ -83,16 +97,18 @@ torch::Tensor ChessNNInterface::getNNInput(std::shared_ptr<Game> game, int playe
 {
     std::shared_ptr<Chess> chess_game = std::static_pointer_cast<Chess>(game);
     auto board = chess_game->getBoard();
-    auto board_tensor = torch::zeros({1, 8, 8, 8});
+    auto board_tensor = torch::zeros({1, 12, 8, 8});
     for (int i = 0; i < 8; i++)
     {
         for (int j = 0; j < 8; j++)
         {
             auto piece = board[i][j];
-            board_tensor[0][piece.getType()][i][j] = 1;
-            board_tensor[0][7][i][j] = piece.getColor();
+            if(piece.getType()){
+                board_tensor[0][piece.getType()-1 + 6*piece.getColor()][i][j] = 1;
+            }
         }
     }
+    // std::cout << board_tensor << std::endl;
     return board_tensor;
 }
 
@@ -112,6 +128,8 @@ std::vector<double> ChessNNInterface::moveScores(torch::Tensor nn_out, std::vect
     }
 
     scores = torch::softmax(scores, 0);
+
+    // std::cout << "scores: " << scores << std::endl;
 
     std::vector<double> scores_vec;
 
@@ -141,7 +159,92 @@ torch::Tensor ChessNNInterface::movesRepr(std::vector<std::shared_ptr<Move>> &mo
     for (int i = 0; i < s; i++)
     {
         auto move = std::static_pointer_cast<ChessMove>(moves[i]);
-        moves_tensor[0][i] = move->getFromRow() * 256 + move->getFromCol()*64 + move->getToRow()*8 + move->getToCol();
+        moves_tensor[0][i] = move->getFromRow() * 512 + move->getFromCol()*64 + move->getToRow()*8 + move->getToCol();
     }
     return moves_tensor;
+}
+
+torch::Tensor decodeMoves(torch::Tensor moves){
+    int s = moves.size(1);
+    auto decoded_moves = torch::zeros({1, s, 4}, torch::kInt64);
+
+    int divider = 512;
+
+    using namespace torch::indexing;
+
+    for(int i = 0; i< 4; i++){
+        decoded_moves.index_put_({0, Slice(), i}, (moves[0]/divider));
+        moves = moves % divider;
+        divider /= 8;
+    }
+
+    return decoded_moves;
+}
+
+torch::Tensor encodeMoves(torch::Tensor moves){
+    int s = moves.size(1);
+    auto encoded_moves = torch::zeros({1, s}, torch::kInt64);
+
+    int divider = 512;
+
+    using namespace torch::indexing;
+
+    for(int i = 0; i< 4; i++){
+        encoded_moves = encoded_moves + moves.index({Slice(), Slice(), i})*divider;
+        divider /= 8;
+    }
+
+    return encoded_moves;
+}
+
+
+std::vector<sample> ChessNNInterface::augment(sample base){
+    std::vector<sample> samples;
+    samples.push_back(base);
+
+    // horizontal flip
+    sample flipped;
+    flipped.board = base.board.flip(3);
+    flipped.moveScores = base.moveScores;
+    flipped.result = base.result;
+
+
+    using namespace torch::indexing;
+
+    auto moves = decodeMoves(base.moves);
+    // std::cout << base.moves << std::endl;
+    // std::cout << moves << std::endl;
+    // std::cout << encodeMoves(moves) << std::endl;
+    moves.index_put_({0, Slice(), 1}, 7 - moves.index({0, Slice(), 1}));
+    moves.index_put_({0, Slice(), 3}, 7 - moves.index({0, Slice(), 3}));
+
+    flipped.moves = encodeMoves(moves);
+
+    samples.push_back(flipped);
+
+    // vertical flip
+    for (int i = 0; i<2; i++){
+        sample flipped;
+
+        base = samples[i];
+
+        auto newBoard = base.board.flip(2);
+        //flipping colors
+        flipped.board = torch::cat({newBoard.index({Slice(),Slice(6, 12), Slice(), Slice()}),
+                                    newBoard.index({Slice(),Slice(0, 6), Slice(), Slice()})}, 1);
+        flipped.moveScores = base.moveScores;
+
+        auto moves = decodeMoves(base.moves);
+
+        moves.index_put_({0, Slice(), 0}, 7 - moves.index({0, Slice(), 0}));
+        moves.index_put_({0, Slice(), 2}, 7 - moves.index({0, Slice(), 2}));
+
+        flipped.moves = encodeMoves(moves);
+
+        flipped.result = 1 - base.result;
+
+        samples.push_back(flipped);
+    }
+
+    return samples;
 }
