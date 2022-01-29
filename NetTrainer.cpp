@@ -41,8 +41,8 @@ void NetTrainer::train(int target_samples, int train_threads, int test_threads) 
         this->trainEpoch();
         new_samples = 0;
 
-        if(this->data.size() >= 100000)
-            this->data.erase(this->data.begin(), this->data.end() - 100000);
+        if(this->data.size() >= 500000)
+            this->data.erase(this->data.begin(), this->data.end() - 500000);
     }
 }
 
@@ -64,7 +64,7 @@ void NetTrainer::dataGenLoop() {
             // std::cout << "moves made: " << moves_made << std::endl;
             if(moves_made > 25)
                 mcts.setRandomness(false);
-            mcts.run(500);
+            mcts.run(1500);
             
             auto game = mcts.getRoot()->getGame();
             auto input = interface->getNNInput(game, game->getCurrentPlayer());
@@ -92,7 +92,7 @@ void NetTrainer::dataGenLoop() {
             sa.moveScores = torch::from_blob(move_visits.data(), {1,s}, torch::kFloat).clone();
 
             samples.push_back(sa);
-            if(moves_made == 500) break;
+            if(moves_made == 100) break;
         }
 
         int game_result = mcts.getRoot()->getGame()->gameStatus(mcts.getRoot()->getPossibleMoves());
@@ -105,7 +105,7 @@ void NetTrainer::dataGenLoop() {
             result = mcts.getRoot()->getGame()->getCurrentPlayer();
         }
 
-        if(moves_made == 500) {
+        if(moves_made == 100) {
             result = 0.5;
         }
 
@@ -113,9 +113,10 @@ void NetTrainer::dataGenLoop() {
         for (auto& s : samples) {
             float res = result;
             s.result = torch::from_blob(&res, {1, 1}, torch::kFloat).clone();
-            this->data.push_back(s);
+            auto augmented = this->interface->augment(s);
+            this->data.insert(this->data.end(), augmented.begin(), augmented.end());
+            this->new_samples += augmented.size();
         }
-        this->new_samples += samples.size();
 
         std::cout << "result " << result << " data size: " << this->data.size() << std::endl;
         this->data_cv.notify_all();
@@ -218,6 +219,10 @@ void NetTrainer::testLoop() {
             else
             {   
                 other.run(1000);
+                double wn = mcts.getRoot()->getScore(player);
+                double nn = mcts.getRoot()->getSimulations();
+                std::cout << "neural board value for opponent: " << wn / nn << std::endl;
+
                 double w = other.getRoot()->getScore(player);
                 double n = other.getRoot()->getSimulations();
                 std::cout << "random board value: " << w / n << std::endl;
@@ -233,7 +238,7 @@ void NetTrainer::testLoop() {
             std::cout << real_game->printBoard() << std::endl;
             moves = real_game->getPossibleMoves();
             moves_made++;
-            if(moves_made == 500) break;
+            if(moves_made == 100) break;
         }
 
         std::ofstream logfile;

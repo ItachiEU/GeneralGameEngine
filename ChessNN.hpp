@@ -24,8 +24,10 @@ private:
    std::shared_ptr<ResidualLayer> res5;
    std::shared_ptr<ResidualLayer> res6;
    std::shared_ptr<ResidualLayer> res7;
-   torch::nn::Conv2d out_conv = nullptr;
-   torch::nn::Linear out_linear = nullptr;
+   torch::nn::Conv2d out_conv_from = nullptr;
+   // torch::nn::Conv2d out_conv_to = nullptr;
+   torch::nn::Linear out_lin_1 = nullptr;
+   torch::nn::Linear out_lin_2 = nullptr;
 
 public:
    ChessNet(int channels, int kernel_size);
@@ -40,4 +42,5 @@ public:
    std::vector<double> moveScores(torch::Tensor nn_out, std::vector<std::shared_ptr<Move>> &moves);
    double boardValue(torch::Tensor nn_out, int player);
    torch::Tensor movesRepr(std::vector<std::shared_ptr<Move>> &moves);
+   std::vector<sample> augment(sample base);
 };

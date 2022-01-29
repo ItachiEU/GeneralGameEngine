@@ -3,13 +3,6 @@
 #include "NN_MCTS.hpp"
 #include <thread>
 
-struct sample {
-    torch::Tensor board;
-    torch::Tensor moves;
-    torch::Tensor moveScores;
-    torch::Tensor result;
-};
-
 class NetTrainer
 {
 private:

@@ -21,7 +21,7 @@ double NN_MCTS::simulate(std::shared_ptr<Node> root)
 
    if (root->getTerminal())
    {
-      return root->getScore(current_player) / ((double)root->getSimulations()+1); 
+      return root->getTrueGameResult();
    }
 
    auto nn_input = this->nn_interface->getNNInput(game, current_player);
@@ -36,13 +36,14 @@ double NN_MCTS::simulate(std::shared_ptr<Node> root)
    assert (score >= -0.01 && "board score < 0");
    // std::cout << "score = " << score << std::endl;
 
-   root->setScore(current_player, score);
-   root->setScore(1 - current_player, 1 - score);
+   // root->setScore(current_player, score);
+   // root->setScore(1 - current_player, 1 - score);
    return score;
 }
 
 std::shared_ptr<Node> NN_MCTS::treePolicy(std::shared_ptr<Node> node)
 {
+   // std::cout << "starting tree pass" << std::endl;
    assert (node != nullptr && "tree policy called with nullptr node");
    int currentPlayer = node->getGame()->getCurrentPlayer();
    while (node->getTerminal() == false)
@@ -64,19 +65,25 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
    int s = node->getPossibleMoves().size();
    assert((int)node->getMoveScores().size() == s);
    double N_P = node->getSimulations();
+
+   // std::cout << "picking best node as player " << currentPlayer << std::endl;
+
    for (int i = 0; i<s; i++)
    {
       double W = 0;
       double N = 0;
       bool expand = true;
+      // std::cout << "checking node " << i << std::endl;
       if(node->getChildren().find(i) != node->getChildren().end())
       {
          W = node->getChildren()[i]->getScore(currentPlayer);
          N = node->getChildren()[i]->getSimulations();
          expand = false;
       }
-      double c = 1.0;
+      double c = 2.0;
       double score = ((2*W-N)/(N + 0.00001)) + c*node->getMoveScores()[i]*sqrt(N_P)/(1+N);
+
+      // std::cout << "win rate = " << W/N << " score = " << score << std::endl;
 
       if(((2*W-N)/(N + 0.00001))  <= -1.01){
          std::cerr << "W = " << W << " N = " << N << " N_P = " << N_P << " score = " << score << std::endl;
@@ -89,7 +96,7 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
          best_expand = expand;
       }
    }
-   
+
    // std::cout << "bestScore = " << bestScore << std::endl;
    // auto move = node->getPossibleMoves()[chosenIndex];
    // auto cmove = std::static_pointer_cast<ChessMove>(move);
@@ -148,6 +155,7 @@ std::shared_ptr<Node> NN_MCTS::expand(std::shared_ptr<Node> node, int move_index
 
    gameCopy->simulateMove(node->getPossibleMoves()[move_index]);
    gameCopy->setCurrentPlayer(1 - gameCopy->getCurrentPlayer());
+   
    auto possibleMoves = gameCopy->getPossibleMoves();
    auto child = std::make_shared<Node>(possibleMoves, gameCopy, node);
    node->getChildren()[move_index] = child;
@@ -156,13 +164,11 @@ std::shared_ptr<Node> NN_MCTS::expand(std::shared_ptr<Node> node, int move_index
       child->setTerminal(true);
       if(game_result == 1 || game_result == 2)
       {
-         child->setScore(0, 0.5);
-         child->setScore(1, 0.5);
+         child->setTrueGameResult(0.5);
       }
       else
       {
-         child->setScore(child->getGame()->getCurrentPlayer(), 0);
-         child->setScore(1-child->getGame()->getCurrentPlayer(), 1);
+         child->setTrueGameResult(0); // we can only lose as a current player
       }
    }
 
