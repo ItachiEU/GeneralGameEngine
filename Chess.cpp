@@ -312,7 +312,12 @@ bool Chess::isUnderCheck(int color)
             {
             case PAWN:
                if (dist == 1 and BISHOP_OFFSETS.count(offset) > 0)
-                  inDanger = true;
+               {
+                  if (color == WHITE and (offset == std::make_pair(1, 1) or offset == std::make_pair(1, -1)))
+                     inDanger = true;
+                  if (color == BLACK and (offset == std::make_pair(-1, 1) or offset == std::make_pair(-1, -1)))
+                     inDanger = true;
+               }
                break;
             case KNIGHT:
                break;
@@ -439,7 +444,7 @@ void Chess::handleCastling(bool kingside)
       {
          this->blackKing = std::make_pair(king.first, king.second - 2);
          this->blackKingMoved = true;
-         this->whiteQueenSideRookMoved = true;
+         this->blackKingSideRookMoved = true;
       }
 
       // move the rook
@@ -499,10 +504,12 @@ std::string Chess::encodePosition()
 std::string Chess::printBoard()
 {
    std::string encoded;
-   for (int i = 0; i < 8; i++){
-      for (int j = 0; j < 8; j++){
+   for (int i = 0; i < 8; i++)
+   {
+      for (int j = 0; j < 8; j++)
+      {
          auto piece = this->board[i][j];
-         int name_shift = (piece.getType()!=0)*(piece.getColor() == WHITE ? 0 : 'a' - 'A');
+         int name_shift = (piece.getType() != 0) * (piece.getColor() == WHITE ? 0 : 'a' - 'A');
          encoded += PIECE_NAME[piece.getType()] + name_shift;
       }
       encoded += "\n";
@@ -627,7 +634,6 @@ bool Chess::isMoveLegal(std::shared_ptr<ChessMove> cmove)
    this->board[cmove->getToRow()][cmove->getToCol()].setType(cmove->getPiece());
 
    bool verdict = !this->isUnderCheck(cmove->getColor());
-
    // undo move here
    this->whiteKing = whiteKing;
    this->blackKing = blackKing;
@@ -734,16 +740,16 @@ void Chess::simulateMove(std::shared_ptr<Move> move)
       if (cmove->getColor() == BLACK)
       {
          if (cmove->getFromCol() == 0 and cmove->getFromRow() == 7)
-            this->blackQueenSideRookMoved = true;
-         if (cmove->getFromCol() == 7 and cmove->getFromRow() == 7)
             this->blackKingSideRookMoved = true;
+         if (cmove->getFromCol() == 7 and cmove->getFromRow() == 7)
+            this->blackQueenSideRookMoved = true;
       }
       if (cmove->getColor() == WHITE)
       {
          if (cmove->getFromCol() == 0 and cmove->getFromRow() == 0)
-            this->whiteQueenSideRookMoved = true;
-         if (cmove->getFromCol() == 7 and cmove->getFromRow() == 0)
             this->whiteKingSideRookMoved = true;
+         if (cmove->getFromCol() == 7 and cmove->getFromRow() == 0)
+            this->whiteQueenSideRookMoved = true;
       }
    }
    this->board[cmove->getFromRow()][cmove->getFromCol()].setColor(-1); // clear field where it was
@@ -842,4 +848,128 @@ void Chess::run(bool debug)
 const std::vector<std::vector<ChessPiece>> &Chess::getBoard()
 {
    return this->board;
+}
+
+std::unordered_map<char, int> PIECE_NUMBER = {
+    {'N', 2},
+    {'B', 3},
+    {'R', 4},
+    {'Q', 5},
+    {'K', 6}};
+
+std::shared_ptr<ChessMove> Chess::getMoveFromStandardNotation(std::string notationMove)
+{
+   int player = notationMove[0] == 'W' ? 0 : 1;
+   assert(player == this->getCurrentPlayer());
+   std::vector<std::shared_ptr<Move>> possibleMoves = this->getPossibleMoves();
+
+   std::string actualMove = notationMove.substr(notationMove.find('.') + 1);
+   std::vector<char> elements;
+   std::shared_ptr<ChessMove> move = nullptr;
+   if (actualMove == "O-O-O") // queenside
+   {
+      for (int i = 0; i < possibleMoves.size(); i++)
+      {
+         auto mv = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
+         if (mv->getPiece() == Piece::KING and abs(mv->getFromCol() - mv->getToCol()) > 1 and mv->getToCol() == 5)
+            return mv;
+      }
+   }
+   if (actualMove == "O-O") // kingside
+   {
+      for (int i = 0; i < possibleMoves.size(); i++)
+      {
+         auto mv = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
+         if (mv->getPiece() == Piece::KING and abs(mv->getFromCol() - mv->getToCol()) > 1 and mv->getToCol() == 1)
+            return mv;
+      }
+   }
+   int piece;
+   bool takes = false;
+   int to_row = -1, to_col = -1;
+   int promoted = -1;
+   for (int i = actualMove.size() - 1; i >= 0; i--)
+   {
+      if (actualMove[i] == 'x')
+      {
+         takes = true;
+         continue;
+      }
+      if (isdigit(actualMove[i]) and to_row == -1 and to_col == -1)
+      {
+         to_col = 7 - (actualMove[i - 1] - 'a');
+         to_row = actualMove[i] - '0' - 1;
+      }
+      if (actualMove[i] == '=')
+         promoted = PIECE_NUMBER[actualMove[i + 1]];
+      elements.push_back(actualMove[i]);
+   }
+   if (islower(actualMove[0]))
+   {
+      if (promoted == -1)
+         piece = Piece::PAWN;
+      else
+         piece = promoted;
+   }
+   else
+      piece = PIECE_NUMBER[actualMove[0]];
+   std::vector<std::shared_ptr<ChessMove>> potentialMoves;
+   for (int i = 0; i < possibleMoves.size(); i++)
+   {
+      std::shared_ptr<ChessMove> move = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
+      if (move->getPiece() == piece and move->getColor() == player and move->getToCol() == to_col and move->getToRow() == to_row)
+      {
+         if (takes and move->getTakeCol() == -1)
+            continue;
+         potentialMoves.push_back(move);
+      }
+   }
+   assert(potentialMoves.size() > 0);
+   if (potentialMoves.size() == 1)
+      return potentialMoves[0];
+   // std::cout << "Ambigous move" << std::endl;
+   int from_col, from_row = -1;
+   for (int i = elements.size() - 1; i >= 0; i--)
+   {
+      if (islower(elements[i]))
+      {
+         from_col = 7 - (elements[i] - 'a');
+         if (isdigit(elements[i - 1]))
+            from_row = elements[i - 1] - '0' - 1;
+         break;
+      }
+   }
+   for (int i = elements.size() - 1; i >= 0; i--)
+   {
+      if (isupper(elements[i]))
+      {
+         if (isdigit(elements[i - 1]))
+         {
+            from_row = elements[i - 1] - '0' - 1;
+            break;
+         }
+         if (islower(elements[i - 1]))
+         {
+            from_col = 7 - (elements[i - 1] - 'a');
+            if (isdigit(elements[i - 2]))
+               from_row = elements[i - 2] - '0' - 1;
+            break;
+         }
+      }
+   }
+   for (auto move : potentialMoves)
+   {
+      if (move->getFromCol() == from_col)
+      {
+         if (from_row == -1 or move->getFromRow() == from_row)
+            return move;
+      }
+      if (move->getFromRow() == from_row)
+      {
+         if (from_col == -1 or move->getFromCol() == from_col)
+            return move;
+      }
+   }
+   std::cerr << "Something went wrong" << std::endl;
+   return nullptr;
 }
