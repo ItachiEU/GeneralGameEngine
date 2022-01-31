@@ -928,7 +928,7 @@ std::shared_ptr<ChessMove> Chess::getMoveFromStandardNotation(std::string notati
    if (potentialMoves.size() == 1)
       return potentialMoves[0];
    // std::cout << "Ambigous move" << std::endl;
-   int from_col, from_row = -1;
+   int from_col = -1, from_row = -1;
    for (int i = elements.size() - 1; i >= 0; i--)
    {
       if (islower(elements[i]))
