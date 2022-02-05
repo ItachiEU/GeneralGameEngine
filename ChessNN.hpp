@@ -25,7 +25,7 @@ private:
    std::shared_ptr<ResidualLayer> res6;
    std::shared_ptr<ResidualLayer> res7;
    torch::nn::Conv2d out_conv_from = nullptr;
-   // torch::nn::Conv2d out_conv_to = nullptr;
+   torch::nn::Conv2d out_conv_to = nullptr;
    torch::nn::Linear out_lin_1 = nullptr;
    torch::nn::Linear out_lin_2 = nullptr;
 

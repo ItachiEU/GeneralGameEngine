@@ -31,7 +31,7 @@ ChessNet::ChessNet(int channels, int kernel_size) : Net()
         .padding(0)
         .bias(true);
 
-    auto out_options = torch::nn::Conv2dOptions(channels, 64, 1)
+    auto out_options = torch::nn::Conv2dOptions(channels, 32, 1)
         .stride(1)
         .padding(0)
         .bias(true);
@@ -45,7 +45,7 @@ ChessNet::ChessNet(int channels, int kernel_size) : Net()
     res6 = register_module("res6", std::make_shared<ResidualLayer>(channels, kernel_size));
     res7 = register_module("res7", std::make_shared<ResidualLayer>(channels, kernel_size));
     out_conv_from = register_module("out_conv_from", torch::nn::Conv2d(out_options));
-    // out_conv_to = register_module("out_conv_to", torch::nn::Conv2d(out_options));
+    out_conv_to = register_module("out_conv_to", torch::nn::Conv2d(out_options));
     out_lin_1 = register_module("out_lin_1", torch::nn::Linear(channels*8*8, 256));
     out_lin_2 = register_module("out_lin_2", torch::nn::Linear(256, 6)); // 4 promote options + 1 for value
 }
@@ -60,16 +60,16 @@ torch::Tensor ChessNet::forward(torch::Tensor x)
     y = res5->forward(y);
     y = res6->forward(y);
     y = res7->forward(y);
-    auto from_values = out_conv_from->forward(y).permute({0,2,3,1}).reshape({-1, 64*64});
-    // auto to_values = out_conv_to->forward(y).reshape({-1, 32, 64}).transpose(1,2);
+    auto from_values = out_conv_from->forward(y).reshape({-1, 32, 64});
+    auto to_values = out_conv_to->forward(y).reshape({-1, 32, 64}).transpose(1,2);
 
-    // auto targets = to_values.matmul(from_values)/sqrt(32);
+    auto targets = to_values.matmul(from_values)/sqrt(32);
     // std::cout << targets.sizes() << std::endl;
-    // auto board_values = targets.reshape({-1, 64*64});
+    auto board_values = targets.reshape({-1, 64*64});
 
     auto ylin = out_lin_1->forward(y.reshape({-1, 8*8*y.size(1)}));
     auto scores = out_lin_2->forward(ylin);
-    return torch::cat({from_values, scores}, 1);
+    return torch::cat({board_values, scores}, 1);
 }
 
 torch::Tensor ChessNet::loss(torch::Tensor input, torch::Tensor moves, torch::Tensor move_masks, torch::Tensor move_scores, torch::Tensor result){

@@ -14,6 +14,7 @@ private:
     std::shared_ptr<torch::Device> device;
 
     void dataGenLoop();
+    void dataGenSupervised();
     void testLoop();
     std::vector<sample> data;
     sample genSample(std::shared_ptr<Game> game);
