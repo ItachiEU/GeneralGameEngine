@@ -94,7 +94,7 @@ std::vector<std::shared_ptr<ChessMove>> Chess::getPawnMoves(int row, int column)
          if (row + 1 == 7) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column, currentPlayer, piece, -1, -1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column, currentPlayer, piece, -1, -1, true));
          }
          else
             moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column, currentPlayer, PAWN, -1, -1));
@@ -108,7 +108,7 @@ std::vector<std::shared_ptr<ChessMove>> Chess::getPawnMoves(int row, int column)
          if (row + 1 == 7) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column - 1, currentPlayer, piece, row + 1, column - 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column - 1, currentPlayer, piece, row + 1, column - 1, true));
          }
          else
             moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column - 1, currentPlayer, PAWN, row + 1, column - 1));
@@ -118,7 +118,7 @@ std::vector<std::shared_ptr<ChessMove>> Chess::getPawnMoves(int row, int column)
          if (row + 1 == 7) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column + 1, currentPlayer, piece, row + 1, column + 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column + 1, currentPlayer, piece, row + 1, column + 1, true));
          }
          else
             moves.push_back(std::make_shared<ChessMove>(row, column, row + 1, column + 1, currentPlayer, PAWN, row + 1, column + 1));
@@ -131,7 +131,7 @@ std::vector<std::shared_ptr<ChessMove>> Chess::getPawnMoves(int row, int column)
          if (row - 1 == 0) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column, currentPlayer, piece, -1, -1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column, currentPlayer, piece, -1, -1, true));
          }
          else
             moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column, currentPlayer, PAWN, -1, -1));
@@ -145,7 +145,7 @@ std::vector<std::shared_ptr<ChessMove>> Chess::getPawnMoves(int row, int column)
          if (row - 1 == 0) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column - 1, currentPlayer, piece, row - 1, column - 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column - 1, currentPlayer, piece, row - 1, column - 1, true));
          }
          else
             moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column - 1, currentPlayer, PAWN, row - 1, column - 1));
@@ -155,7 +155,7 @@ std::vector<std::shared_ptr<ChessMove>> Chess::getPawnMoves(int row, int column)
          if (row - 1 == 0) // promote
          {
             for (int piece = KNIGHT; piece <= QUEEN; piece++) // consider different promotion options
-               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column + 1, currentPlayer, piece, row - 1, column + 1));
+               moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column + 1, currentPlayer, piece, row - 1, column + 1, true));
          }
          else
             moves.push_back(std::make_shared<ChessMove>(row, column, row - 1, column + 1, currentPlayer, PAWN, row - 1, column + 1));
@@ -857,7 +857,7 @@ std::unordered_map<char, int> PIECE_NUMBER = {
     {'Q', 5},
     {'K', 6}};
 
-std::shared_ptr<ChessMove> Chess::getMoveFromStandardNotation(std::string notationMove)
+std::shared_ptr<Move> Chess::getMoveFromStandardNotation(std::string notationMove)
 {
    int player = notationMove[0] == 'W' ? 0 : 1;
    assert(player == this->getCurrentPlayer());
@@ -868,7 +868,7 @@ std::shared_ptr<ChessMove> Chess::getMoveFromStandardNotation(std::string notati
    std::shared_ptr<ChessMove> move = nullptr;
    if (actualMove == "O-O-O") // queenside
    {
-      for (int i = 0; i < possibleMoves.size(); i++)
+      for (int i = 0; i < (int)possibleMoves.size(); i++)
       {
          auto mv = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
          if (mv->getPiece() == Piece::KING and abs(mv->getFromCol() - mv->getToCol()) > 1 and mv->getToCol() == 5)
@@ -877,7 +877,7 @@ std::shared_ptr<ChessMove> Chess::getMoveFromStandardNotation(std::string notati
    }
    if (actualMove == "O-O") // kingside
    {
-      for (int i = 0; i < possibleMoves.size(); i++)
+      for (int i = 0; i < (int)possibleMoves.size(); i++)
       {
          auto mv = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
          if (mv->getPiece() == Piece::KING and abs(mv->getFromCol() - mv->getToCol()) > 1 and mv->getToCol() == 1)
@@ -904,59 +904,81 @@ std::shared_ptr<ChessMove> Chess::getMoveFromStandardNotation(std::string notati
          promoted = PIECE_NUMBER[actualMove[i + 1]];
       elements.push_back(actualMove[i]);
    }
+   bool pawn = false;
+   bool promotion = false;
    if (islower(actualMove[0]))
    {
-      if (promoted == -1)
+      pawn = true;
+      if (promoted == -1){
          piece = Piece::PAWN;
+      }
       else
+      {
          piece = promoted;
+         promotion = true;
+      }
    }
    else
       piece = PIECE_NUMBER[actualMove[0]];
    std::vector<std::shared_ptr<ChessMove>> potentialMoves;
-   for (int i = 0; i < possibleMoves.size(); i++)
+   for (int i = 0; i < (int)possibleMoves.size(); i++)
    {
       std::shared_ptr<ChessMove> move = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
-      if (move->getPiece() == piece and move->getColor() == player and move->getToCol() == to_col and move->getToRow() == to_row)
+      if (move->getPiece() == piece and move->getColor() == player and move->getToCol() == to_col and move->getToRow() == to_row and move->getPromotion()==promotion)
       {
          if (takes and move->getTakeCol() == -1)
             continue;
          potentialMoves.push_back(move);
       }
    }
-   assert(potentialMoves.size() > 0);
+   if(potentialMoves.size() == 0)
+   {
+      std::cout << this->printBoard() << std::endl;
+      std::cout << "No move found for: " << notationMove << std::endl;
+      return nullptr;
+   }
+   
    if (potentialMoves.size() == 1)
       return potentialMoves[0];
    // std::cout << "Ambigous move" << std::endl;
    int from_col = -1, from_row = -1;
-   for (int i = elements.size() - 1; i >= 0; i--)
+   if(pawn)
    {
-      if (islower(elements[i]))
+      for (int i = elements.size() - 1; i >= 0; i--)
       {
-         from_col = 7 - (elements[i] - 'a');
-         if (isdigit(elements[i - 1]))
-            from_row = elements[i - 1] - '0' - 1;
-         break;
-      }
-   }
-   for (int i = elements.size() - 1; i >= 0; i--)
-   {
-      if (isupper(elements[i]))
-      {
-         if (isdigit(elements[i - 1]))
+         if (islower(elements[i]))
          {
-            from_row = elements[i - 1] - '0' - 1;
-            break;
-         }
-         if (islower(elements[i - 1]))
-         {
-            from_col = 7 - (elements[i - 1] - 'a');
-            if (isdigit(elements[i - 2]))
-               from_row = elements[i - 2] - '0' - 1;
+            from_col = 7 - (elements[i] - 'a');
+            if (isdigit(elements[i - 1]))
+               from_row = elements[i - 1] - '0' - 1;
             break;
          }
       }
    }
+   else 
+   {
+      for (int i = elements.size() - 1; i >= 0; i--)
+      {
+         if (isupper(elements[i]))
+         {
+            if (isdigit(elements[i - 1]))
+            {
+               from_row = elements[i - 1] - '0' - 1;
+               break;
+            }
+            if (islower(elements[i - 1]))
+            {
+               from_col = 7 - (elements[i - 1] - 'a');
+               if (isdigit(elements[i - 2]))
+                  from_row = elements[i - 2] - '0' - 1;
+               break;
+            }
+         }
+      }
+   }
+
+   // std::cout << to_row << " " << to_col << " "<< from_row << " " << from_col << std::endl;
+
    for (auto move : potentialMoves)
    {
       if (move->getFromCol() == from_col)
@@ -970,6 +992,11 @@ std::shared_ptr<ChessMove> Chess::getMoveFromStandardNotation(std::string notati
             return move;
       }
    }
-   std::cerr << "Something went wrong" << std::endl;
+   std::cout << this->printBoard() << std::endl;
+   std::cerr << "Something went wrong: "<< notationMove << std::endl;
+   for (auto move : potentialMoves)
+   {
+      std::cout << move->getFromRow() << " " << move->getFromCol() << " " << move->getToRow() << " " << move->getToCol() << std::endl;
+   }
    return nullptr;
 }

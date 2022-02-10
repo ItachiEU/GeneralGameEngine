@@ -37,9 +37,9 @@ int main()
    auto opt = std::make_shared<torch::optim::Adam>(net->parameters(), 0.0003);
    auto interface = std::make_shared<ChessNNInterface>();
 
-   auto trainer = std::make_shared<NetTrainer>(game, interface, net, device, opt, 32, 64);
+   auto trainer = std::make_shared<NetTrainer>(game, interface, net, device, opt, 1, 64);
 
-   trainer->train(12000, 64, 1);
+   trainer->train(10000, 0, 1, 4);
 
    return 0;
 }

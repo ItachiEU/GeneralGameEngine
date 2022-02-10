@@ -18,4 +18,5 @@ public:
    virtual int gameStatus(std::vector<std::shared_ptr<Move>> moves) = 0;
    virtual std::shared_ptr<Game> clone() = 0;
    virtual std::string printBoard() = 0;
+   virtual std::shared_ptr<Move> getMoveFromStandardNotation(std::string notation) = 0;
 };

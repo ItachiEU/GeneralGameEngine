@@ -13,6 +13,9 @@ private:
     std::shared_ptr<torch::optim::Adam> optimizer;
     std::shared_ptr<torch::Device> device;
 
+    std::vector<std::string> games;
+    std::vector<double> gameScores;
+
     void dataGenLoop();
     void dataGenSupervised();
     void testLoop();
@@ -37,6 +40,6 @@ public:
         int eval_batch_size,
         int train_batch_size
     );
-    void train(int target_samples, int train_threads, int test_threads);
+    void train(int target_samples, int train_threads, int test_threads, int supervised_threads);
     void shutdown();
 };
