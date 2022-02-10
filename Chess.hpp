@@ -51,6 +51,6 @@ public:
    int gameStatus(std::vector<std::shared_ptr<Move>> moves);
    std::shared_ptr<Game> clone();
    const std::vector<std::vector<ChessPiece>> &getBoard();
-   std::shared_ptr<ChessMove> getMoveFromStandardNotation(std::string notationMove = "W1.d4");
+   std::shared_ptr<Move> getMoveFromStandardNotation(std::string notationMove = "W1.d4");
    std::string printBoard();
 };

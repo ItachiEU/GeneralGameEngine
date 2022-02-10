@@ -1,6 +1,6 @@
 #include "ChessMove.hpp"
 
-ChessMove::ChessMove(int from_row, int from_col, int to_row, int to_col, int color, int piece, int take_row, int take_col) : Move()
+ChessMove::ChessMove(int from_row, int from_col, int to_row, int to_col, int color, int piece, int take_row, int take_col, bool promotion) : Move()
 {
    this->from_row = from_row;
    this->from_col = from_col;
@@ -10,6 +10,7 @@ ChessMove::ChessMove(int from_row, int from_col, int to_row, int to_col, int col
    this->piece = piece;
    this->take_row = take_row;
    this->take_col = take_col;
+   this->promotion = promotion;
 }
 
 int ChessMove::getFromRow()
@@ -44,6 +45,10 @@ int ChessMove::getTakeCol()
 {
    return this->take_col;
 }
+bool ChessMove::getPromotion()
+{
+   return this->promotion;
+}
 void ChessMove::setFromRow(int from_row)
 {
    this->from_row = from_row;
@@ -76,6 +81,10 @@ void ChessMove::setTakeCol(int take_col)
 {
    this->take_col = take_col;
 }
+void ChessMove::setPromotion(bool promotion)
+{
+   this->promotion = promotion;
+}
 
 bool ChessMove::eq(std::shared_ptr<Move> other_m)
 {
@@ -88,6 +97,7 @@ bool ChessMove::eq(std::shared_ptr<Move> other_m)
       this->color == other->getColor() &&
       this->piece == other->getPiece() &&
       this->take_row == other->getTakeRow() &&
-      this->take_col == other->getTakeCol()
+      this->take_col == other->getTakeCol() &&
+      this->promotion == other->getPromotion()
    );
 }
