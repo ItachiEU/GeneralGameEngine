@@ -857,6 +857,69 @@ std::unordered_map<char, int> PIECE_NUMBER = {
     {'Q', 5},
     {'K', 6}};
 
+std::unordered_map<int, char> NUMBER_PIECE = {
+    {2, 'n'},
+    {3, 'b'},
+    {4, 'r'},
+    {5, 'q'}};
+
+std::shared_ptr<ChessMove> Chess::moveFromLANNotation(std::string notationMove)
+{
+   /*
+      Takes argument in long algebraic notation format used in uci
+      returns pointer to engine specific move
+   */
+   int from_row, from_col, to_row, to_col, take_row, take_col, player = this->getCurrentPlayer(), piece;
+   bool takes = false, promotion = false;
+   from_col = 7 - (notationMove[0] - 'a');
+   from_row = notationMove[1] - '0' - 1;
+   to_col = 7 - (notationMove[2] - 'a');
+   to_row = notationMove[3] - '0' - 1;
+   piece = this->board[from_row][from_col].getType();
+
+   if (this->board[to_row][to_col].getColor() == 1 - player)
+   {
+      takes = true;
+      take_row = to_row;
+      take_col = to_col;
+   }
+   else if (piece == PAWN and from_col != to_col and this->board[to_row][to_col].getColor() == -1) // en passant
+   {
+      takes = true;
+      take_row = from_row;
+      take_col = to_col;
+   }
+
+   if (notationMove.size() == 5)
+   {
+      piece = PIECE_NUMBER[toupper(notationMove[4])];
+      promotion = true;
+   }
+   bool move_exists = false;
+   auto parsedMove = std::make_shared<ChessMove>(from_row, from_col, to_row, to_col, player, piece, takes ? take_row : -1, takes ? take_col : -1, promotion);
+   for (auto move : this->getPossibleMoves())
+   {
+      auto cmove = std::static_pointer_cast<ChessMove>(move);
+      if (cmove->eq(parsedMove))
+         move_exists = true;
+   }
+   assert(move_exists);
+   return parsedMove;
+}
+
+std::string Chess::LANfromMove(std::shared_ptr<ChessMove> chessMove)
+{
+
+   std::string lan_move;
+   lan_move += (char)((int)('a') + (7 - chessMove->getFromCol()));
+   lan_move += std::to_string(chessMove->getFromRow() + 1);
+   lan_move += (char)((int)('a') + (7 - chessMove->getToCol()));
+   lan_move += std::to_string(chessMove->getToRow() + 1);
+   if (chessMove->getPromotion())
+      lan_move += NUMBER_PIECE[chessMove->getPiece()];
+   return lan_move;
+}
+
 std::shared_ptr<Move> Chess::getMoveFromStandardNotation(std::string notationMove)
 {
    int player = notationMove[0] == 'W' ? 0 : 1;
@@ -909,7 +972,8 @@ std::shared_ptr<Move> Chess::getMoveFromStandardNotation(std::string notationMov
    if (islower(actualMove[0]))
    {
       pawn = true;
-      if (promoted == -1){
+      if (promoted == -1)
+      {
          piece = Piece::PAWN;
       }
       else
@@ -924,25 +988,25 @@ std::shared_ptr<Move> Chess::getMoveFromStandardNotation(std::string notationMov
    for (int i = 0; i < (int)possibleMoves.size(); i++)
    {
       std::shared_ptr<ChessMove> move = std::static_pointer_cast<ChessMove>(possibleMoves[i]);
-      if (move->getPiece() == piece and move->getColor() == player and move->getToCol() == to_col and move->getToRow() == to_row and move->getPromotion()==promotion)
+      if (move->getPiece() == piece and move->getColor() == player and move->getToCol() == to_col and move->getToRow() == to_row and move->getPromotion() == promotion)
       {
          if (takes and move->getTakeCol() == -1)
             continue;
          potentialMoves.push_back(move);
       }
    }
-   if(potentialMoves.size() == 0)
+   if (potentialMoves.size() == 0)
    {
       std::cout << this->printBoard() << std::endl;
       std::cout << "No move found for: " << notationMove << std::endl;
       return nullptr;
    }
-   
+
    if (potentialMoves.size() == 1)
       return potentialMoves[0];
    // std::cout << "Ambigous move" << std::endl;
    int from_col = -1, from_row = -1;
-   if(pawn)
+   if (pawn)
    {
       for (int i = elements.size() - 1; i >= 0; i--)
       {
@@ -955,7 +1019,7 @@ std::shared_ptr<Move> Chess::getMoveFromStandardNotation(std::string notationMov
          }
       }
    }
-   else 
+   else
    {
       for (int i = elements.size() - 1; i >= 0; i--)
       {
@@ -993,7 +1057,7 @@ std::shared_ptr<Move> Chess::getMoveFromStandardNotation(std::string notationMov
       }
    }
    std::cout << this->printBoard() << std::endl;
-   std::cerr << "Something went wrong: "<< notationMove << std::endl;
+   std::cerr << "Something went wrong: " << notationMove << std::endl;
    for (auto move : potentialMoves)
    {
       std::cout << move->getFromRow() << " " << move->getFromCol() << " " << move->getToRow() << " " << move->getToCol() << std::endl;
