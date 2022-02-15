@@ -68,6 +68,8 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
 
    // std::cout << "picking best node as player " << currentPlayer << std::endl;
 
+   double c = log((N_P + 1 + 18000.0)/ 18000.0) + 1.25; // from alphazero paper
+
    for (int i = 0; i<s; i++)
    {
       double W = 0;
@@ -80,7 +82,7 @@ std::shared_ptr<Node> NN_MCTS::bestChild(std::shared_ptr<Node> node, int current
          N = node->getChildren()[i]->getSimulations();
          expand = false;
       }
-      double c = 2.0;
+      
       double score = ((2*W-N)/(N + 0.00001)) + c*node->getMoveScores()[i]*sqrt(N_P)/(1+N);
 
       // std::cout << "win rate = " << W/N << " score = " << score << std::endl;

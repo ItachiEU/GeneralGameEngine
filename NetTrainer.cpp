@@ -66,6 +66,11 @@ void NetTrainer::train(int target_samples, int train_threads, int test_threads, 
         this->trainEpoch();
         new_samples = 0;
 
+        if(supervised_threads != 0)
+        {
+            this->data.clear();
+        }
+
         if((int)this->data.size() >= this->target_samples)
             this->data.erase(this->data.begin(), this->data.end() - this->target_samples);
 

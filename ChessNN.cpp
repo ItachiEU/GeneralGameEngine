@@ -164,7 +164,7 @@ torch::Tensor ChessNNInterface::movesRepr(std::vector<std::shared_ptr<Move>> &mo
     return moves_tensor;
 }
 
-torch::Tensor decodeMoves(torch::Tensor moves){
+static torch::Tensor decodeMoves(torch::Tensor moves){
     int s = moves.size(1);
     auto decoded_moves = torch::zeros({1, s, 4}, torch::kInt64);
 
@@ -181,7 +181,7 @@ torch::Tensor decodeMoves(torch::Tensor moves){
     return decoded_moves;
 }
 
-torch::Tensor encodeMoves(torch::Tensor moves){
+static torch::Tensor encodeMoves(torch::Tensor moves){
     int s = moves.size(1);
     auto encoded_moves = torch::zeros({1, s}, torch::kInt64);
 
